@@ -273,6 +273,28 @@ button,
   margin-bottom: 10px;
 }
 
+.memory-stage {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: var(--accent-dark);
+  background: #e5f2ec;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.memory-stage.recall {
+  color: #8a5c0f;
+  background: #f6ead7;
+}
+
+.memory-stage.stage-pulse {
+  animation: stage-pulse 0.42s ease;
+}
+
 .question-card,
 .explanation,
 .stat-grid,
@@ -360,6 +382,15 @@ button,
   box-shadow: 0 10px 22px rgba(31, 138, 95, 0.12);
 }
 
+.option.preview-locked {
+  cursor: default;
+}
+
+.option.preview-correct .option-key {
+  color: #fff;
+  background: var(--accent);
+}
+
 .option.wrong {
   border-color: var(--red);
   background: #fff0ed;
@@ -396,6 +427,27 @@ button,
 .fill-area input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(31, 138, 95, 0.12);
+}
+
+.memory-answer-preview {
+  display: grid;
+  gap: 8px;
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid rgba(31, 138, 95, 0.16);
+  border-radius: 8px;
+  background: #eff8f4;
+}
+
+.memory-answer-preview strong {
+  color: var(--accent-dark);
+  font-size: 13px;
+}
+
+.memory-answer-preview span {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.6;
 }
 
 .controls {
@@ -755,8 +807,46 @@ button,
   border-color: var(--red);
 }
 
+.sheet-item.memory-preview {
+  color: var(--accent-dark);
+  background: #edf8f2;
+  border-color: #cbe7d9;
+}
+
+.sheet-item.memory-recall {
+  color: #8a5c0f;
+  background: #fff3df;
+  border-color: #f0d5a0;
+}
+
+.sheet-item.memory-mastered {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.sheet-item.memory-repeat {
+  color: #fff;
+  background: var(--amber);
+  border-color: var(--amber);
+}
+
 .hidden {
   display: none !important;
+}
+
+@keyframes stage-pulse {
+  0% {
+    transform: scale(0.98);
+  }
+
+  45% {
+    transform: scale(1.02);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 @keyframes badge-pop {
@@ -1038,7 +1128,7 @@ button,
   }
 
   .mode-list {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .mode {
@@ -1178,6 +1268,17 @@ button,
 
   .controls {
     gap: 8px;
+  }
+
+  .memory-stage {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .memory-answer-preview {
+    margin-top: 20px;
+    padding: 14px;
   }
 
   .map-flow {

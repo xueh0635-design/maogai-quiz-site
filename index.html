@@ -55,6 +55,7 @@
               <span id="questionType">题型</span>
               <span id="questionProgress">0 / 0</span>
             </div>
+            <div class="memory-stage hidden" id="memoryStage"></div>
 
             <article class="question-card" id="questionCard">
               <div class="feedback-badge hidden" id="feedbackBadge" aria-live="polite"></div>
@@ -63,10 +64,12 @@
               <div class="fill-area hidden" id="fillArea">
                 <input id="fillInput" type="text" placeholder="输入答案" autocomplete="off" />
               </div>
+              <div class="memory-answer-preview hidden" id="memoryAnswerPreview"></div>
             </article>
 
             <div class="controls">
               <button class="secondary" id="prevButton" type="button">上一题</button>
+              <button class="secondary hidden" id="memoryPeekButton" type="button">再看一眼</button>
               <button class="primary" id="submitButton" type="button">提交答案</button>
               <button class="secondary" id="nextButton" type="button">下一题</button>
               <button class="ghost" id="bookmarkButton" type="button">收藏</button>
@@ -103,19 +106,19 @@
         <section class="stat-grid">
           <div>
             <span id="totalCount">0</span>
-            <p>题目</p>
+            <p id="totalLabel">题目</p>
           </div>
           <div>
             <span id="doneCount">0</span>
-            <p>已练</p>
+            <p id="doneLabel">已练</p>
           </div>
           <div>
             <span id="accuracy">0%</span>
-            <p>正确率</p>
+            <p id="accuracyLabel">正确率</p>
           </div>
           <div>
             <span id="wrongCount">0</span>
-            <p>错题</p>
+            <p id="wrongLabel">错题</p>
           </div>
         </section>
 
@@ -125,6 +128,7 @@
           </div>
           <div class="mode-list">
             <button class="mode active" data-mode="all" type="button">章节练习</button>
+            <button class="mode" data-mode="memory" type="button">记忆模式</button>
             <button class="mode" data-mode="wrong" type="button">错题复习</button>
             <button class="mode" data-mode="bookmarked" type="button">收藏题</button>
           </div>
