@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>毛概复习题库</title>
+    <meta name="theme-color" content="#1f8a5f" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="毛概题库" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icon.svg" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">毛</div>
+          <div>
+            <h1>毛概题库</h1>
+            <p>章节自测与错题复习</p>
+          </div>
+        </div>
+
+        <div class="view-switch" aria-label="视图切换">
+          <button class="view-button active" data-view="quiz" type="button">题库练习</button>
+          <button class="view-button" data-view="knowledge" type="button">知识谱系</button>
+        </div>
+
+        <div class="install-card" id="installCard">
+          <span>手机端</span>
+          <button class="text-button" id="installButton" type="button">添加到主屏幕</button>
+        </div>
+
+        <nav class="chapter-list" id="chapterList" aria-label="章节"></nav>
+      </aside>
+
+      <main class="workspace">
+        <div id="quizView">
+          <header class="topbar">
+            <div>
+              <p class="eyeline" id="currentScope">全部章节</p>
+              <h2 id="questionTitle">加载题库中...</h2>
+            </div>
+            <div class="topbar-actions">
+              <div class="segmented" id="typeFilter" aria-label="题型筛选"></div>
+              <button class="icon-button" id="shuffleButton" type="button" title="随机顺序">↻</button>
+            </div>
+          </header>
+
+          <section class="question-panel" aria-live="polite">
+            <div class="question-meta">
+              <span id="questionType">题型</span>
+              <span id="questionProgress">0 / 0</span>
+            </div>
+
+            <article class="question-card" id="questionCard">
+              <div class="feedback-badge hidden" id="feedbackBadge" aria-live="polite"></div>
+              <p class="stem" id="questionStem"></p>
+              <div class="options" id="options"></div>
+              <div class="fill-area hidden" id="fillArea">
+                <input id="fillInput" type="text" placeholder="输入答案" autocomplete="off" />
+              </div>
+            </article>
+
+            <div class="controls">
+              <button class="secondary" id="prevButton" type="button">上一题</button>
+              <button class="primary" id="submitButton" type="button">提交答案</button>
+              <button class="secondary" id="nextButton" type="button">下一题</button>
+              <button class="ghost" id="bookmarkButton" type="button">收藏</button>
+            </div>
+
+            <section class="explanation hidden" id="explanationBox">
+              <div class="result-line" id="resultLine"></div>
+              <div class="answer-line" id="answerLine"></div>
+              <p id="explanationText"></p>
+            </section>
+          </section>
+        </div>
+
+        <section class="knowledge-view hidden" id="knowledgeView">
+          <header class="topbar">
+            <div>
+              <p class="eyeline">教材目录 · 高频考点 · 对应题目</p>
+              <h2>知识谱系</h2>
+            </div>
+            <button class="primary" id="backToQuizButton" type="button">回到刷题</button>
+          </header>
+
+          <div class="knowledge-layout">
+            <section class="map-panel">
+              <div class="map-flow" id="mapFlow"></div>
+              <div class="topic-list" id="topicList"></div>
+            </section>
+            <aside class="topic-detail" id="topicDetail"></aside>
+          </div>
+        </section>
+      </main>
+
+      <aside class="review-panel">
+        <section class="stat-grid">
+          <div>
+            <span id="totalCount">0</span>
+            <p>题目</p>
+          </div>
+          <div>
+            <span id="doneCount">0</span>
+            <p>已练</p>
+          </div>
+          <div>
+            <span id="accuracy">0%</span>
+            <p>正确率</p>
+          </div>
+          <div>
+            <span id="wrongCount">0</span>
+            <p>错题</p>
+          </div>
+        </section>
+
+        <section class="review-section">
+          <div class="section-head">
+            <h3>练习模式</h3>
+          </div>
+          <div class="mode-list">
+            <button class="mode active" data-mode="all" type="button">章节练习</button>
+            <button class="mode" data-mode="wrong" type="button">错题复习</button>
+            <button class="mode" data-mode="bookmarked" type="button">收藏题</button>
+          </div>
+        </section>
+
+        <section class="review-section">
+          <div class="section-head">
+            <h3>答题卡</h3>
+            <button class="text-button" id="resetButton" type="button">重置记录</button>
+          </div>
+          <div class="answer-sheet" id="answerSheet"></div>
+        </section>
+      </aside>
+    </div>
+
+    <script src="./questions-data.js"></script>
+    <script src="./knowledge-map-data.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
