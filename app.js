@@ -135,6 +135,10 @@
     return `${platform} · ${Math.floor(Math.random() * 9000 + 1000)}`;
   }
 
+  function nowIso() {
+    return new Date().toISOString();
+  }
+
   function loadSyncState() {
     try {
       const raw = JSON.parse(localStorage.getItem(SYNC_STORAGE_KEY) || "null");
