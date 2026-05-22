@@ -590,7 +590,26 @@
 
     const existing = await MaogaiSyncClient.fetchGroup(groupCode);
     if (existing) {
-      throw new Error("同步码已存在，请换一个再创建");
+      const remote = cloudPayloadFromRow(existing);
+      const merged = mergeSyncSnapshots(localSyncSnapshot(), remote);
+      const current = await MaogaiSyncClient.updateGroup(
+        groupCode,
+        Number(existing.revision || 0),
+        prepareSnapshotForCloud(merged),
+        state.sync,
+      );
+      if (!current) {
+        throw new Error("同步档案刚好被其他设备更新了，请再同步一次");
+      }
+      state.sync.revision = Number(current.revision || 0);
+      state.sync.lastSyncedAt = nowIso();
+      state.sync.dirty = false;
+      saveSyncState();
+      applyMergedSnapshot(cloudPayloadFromRow(current));
+      saveState({ skipSyncMark: true });
+      touchSyncStatus("云档案已连接");
+      render();
+      return;
     }
 
     const created = await MaogaiSyncClient.createGroup(groupCode, snapshot, state.sync);
@@ -1508,29 +1527,28 @@
         renderSyncPanel();
       });
     }
-    if (els.syncCreateButton) {
-      els.syncCreateButton.addEventListener("click", async () => {
-        try {
+    document.addEventListener("click", async (event) => {
+      const button = event.target.closest("#syncCreateButton, #syncJoinButton, #syncNowButton");
+      if (!button) return;
+      event.preventDefault();
+      try {
+        if (button.id === "syncCreateButton") {
           await createCloudGroup();
-        } catch (error) {
-          touchSyncStatus("创建失败", error?.message || "请检查网络后重试");
-        }
-      });
-    }
-    if (els.syncJoinButton) {
-      els.syncJoinButton.addEventListener("click", async () => {
-        try {
+        } else if (button.id === "syncJoinButton") {
           await joinCloudGroup();
-        } catch (error) {
-          touchSyncStatus("加入失败", error?.message || "请检查同步码后重试");
+        } else if (button.id === "syncNowButton") {
+          await syncNow();
         }
-      });
-    }
-    if (els.syncNowButton) {
-      els.syncNowButton.addEventListener("click", async () => {
-        await syncNow();
-      });
-    }
+      } catch (error) {
+        if (button.id === "syncCreateButton") {
+          touchSyncStatus("创建失败", error?.message || "请检查网络后重试");
+        } else if (button.id === "syncJoinButton") {
+          touchSyncStatus("加入失败", error?.message || "请检查同步码后重试");
+        } else {
+          touchSyncStatus("同步失败", error?.message || "请检查网络后重试");
+        }
+      }
+    });
     els.resetButton.addEventListener("click", () => {
       if (!confirm("确定清空本浏览器中的答题记录、错题、收藏和记忆进度吗？")) return;
       state.records = {};
