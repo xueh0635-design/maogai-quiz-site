@@ -1,9 +1,11 @@
-const CACHE_NAME = "maogai-quiz-v4";
+const CACHE_NAME = "maogai-quiz-v5";
 const CORE_ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./sync-config.js",
+  "./sync-client.js",
   "./questions-data.js",
   "./knowledge-map-data.js",
   "./questions.json",
