@@ -1,4 +1,4 @@
-const CACHE_NAME = "maogai-quiz-v5";
+const CACHE_NAME = "maogai-quiz-v6";
 const CORE_ASSETS = [
   "./",
   "./index.html",
