@@ -1,9 +1,6 @@
 (function () {
   const config = window.MAOGAI_SYNC_CONFIG || {};
-  const CDN_SOURCES = [
-    "https://esm.sh/@neondatabase/serverless@1.0.2?bundle",
-    "https://cdn.jsdelivr.net/npm/@neondatabase/serverless/+esm",
-  ];
+  const LOCAL_MODULE = "./neon-serverless.mjs";
 
   let neonLoaderPromise = null;
   let sqlFactory = null;
@@ -30,17 +27,10 @@
     }
     if (!neonLoaderPromise) {
       neonLoaderPromise = (async () => {
-        let lastError = null;
-        for (const source of CDN_SOURCES) {
-          try {
-            const mod = await import(source);
-            const neon = mod.neon || mod.default?.neon || mod.default;
-            if (typeof neon === "function") return neon;
-          } catch (error) {
-            lastError = error;
-          }
-        }
-        throw lastError || new Error("无法加载 Neon Serverless Driver");
+        const mod = await import(LOCAL_MODULE);
+        const neon = mod.neon || mod.default?.neon || mod.default;
+        if (typeof neon === "function") return neon;
+        throw new Error("无法加载 Neon Serverless Driver");
       })();
     }
     sqlFactory = await neonLoaderPromise;
