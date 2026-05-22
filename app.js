@@ -1,8 +1,10 @@
 (function () {
   const STORAGE_KEY = "maogai-quiz-state-v2";
+  const SYNC_STORAGE_KEY = "maogai-quiz-sync-v1";
   const LEGACY_STORAGE_KEY = "maogai-quiz-state-v1";
   const AUTO_ADVANCE_DELAY = 800;
   const MEMORY_REPEAT_DELAY = 3;
+  const SYNC_RETRY_DELAY = 2500;
   const TYPE_LABELS = {
     all: "全部",
     single: "单选",
@@ -55,6 +57,13 @@
     resetButton: document.querySelector("#resetButton"),
     installCard: document.querySelector("#installCard"),
     installButton: document.querySelector("#installButton"),
+    syncGroupInput: document.querySelector("#syncGroupInput"),
+    syncDeviceInput: document.querySelector("#syncDeviceInput"),
+    syncCreateButton: document.querySelector("#syncCreateButton"),
+    syncJoinButton: document.querySelector("#syncJoinButton"),
+    syncNowButton: document.querySelector("#syncNowButton"),
+    syncStatus: document.querySelector("#syncStatus"),
+    syncMeta: document.querySelector("#syncMeta"),
   };
 
   const state = {
@@ -76,10 +85,23 @@
     records: {},
     wrong: new Set(),
     bookmarked: new Set(),
+    bookmarkedMeta: {},
     memoryRecords: {},
     memoryQueue: [],
     memoryScopeKey: "",
     memoryPhase: "preview",
+    sync: {
+      groupCode: "",
+      deviceId: "",
+      deviceName: "",
+      revision: 0,
+      lastSyncedAt: "",
+      lastError: "",
+      status: "未连接云同步",
+      dirty: false,
+      busy: false,
+    },
+    syncTimer: null,
     installPrompt: null,
     feedbackTimer: null,
     feedbackState: null,
@@ -104,6 +126,245 @@
       state.memoryRecords[questionId] = createMemoryRecord();
     }
     return state.memoryRecords[questionId];
+  }
+
+  function createDefaultDeviceName() {
+    const isPhone = /iphone|ipod/i.test(navigator.userAgent);
+    const isPad = /ipad/i.test(navigator.userAgent);
+    const platform = isPhone ? "iPhone" : isPad ? "iPad" : /android/i.test(navigator.userAgent) ? "Android" : "电脑";
+    return `${platform} · ${Math.floor(Math.random() * 9000 + 1000)}`;
+  }
+
+  function loadSyncState() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(SYNC_STORAGE_KEY) || "null");
+      if (!raw) return;
+      state.sync.groupCode = raw.groupCode || "";
+      state.sync.deviceId = raw.deviceId || "";
+      state.sync.deviceName = raw.deviceName || "";
+      state.sync.revision = Number(raw.revision || 0);
+      state.sync.lastSyncedAt = raw.lastSyncedAt || "";
+      state.sync.lastError = raw.lastError || "";
+      state.sync.status = raw.status || "未连接云同步";
+      state.sync.dirty = Boolean(raw.dirty);
+    } catch {
+      // ignore broken sync metadata
+    }
+  }
+
+  function saveSyncState() {
+    localStorage.setItem(
+      SYNC_STORAGE_KEY,
+      JSON.stringify({
+        groupCode: state.sync.groupCode,
+        deviceId: state.sync.deviceId,
+        deviceName: state.sync.deviceName,
+        revision: state.sync.revision,
+        lastSyncedAt: state.sync.lastSyncedAt,
+        lastError: state.sync.lastError,
+        status: state.sync.status,
+        dirty: state.sync.dirty,
+      }),
+    );
+  }
+
+  function ensureSyncIdentity() {
+    if (!state.sync.deviceId) {
+      state.sync.deviceId = crypto.randomUUID ? crypto.randomUUID() : `dev-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+    }
+    if (!state.sync.deviceName) {
+      state.sync.deviceName = createDefaultDeviceName();
+    }
+  }
+
+  function touchSyncStatus(text, error = "") {
+    state.sync.status = text;
+    state.sync.lastError = error;
+    saveSyncState();
+    renderSyncPanel();
+  }
+
+  function markSyncDirty() {
+    if (!state.sync.groupCode) return;
+    if (state.sync.busy) return;
+    state.sync.dirty = true;
+    saveSyncState();
+    scheduleSyncSoon();
+  }
+
+  function scheduleSyncSoon() {
+    if (!state.sync.groupCode || state.sync.busy) return;
+    if (state.syncTimer) {
+      window.clearTimeout(state.syncTimer);
+    }
+    state.syncTimer = window.setTimeout(() => {
+      state.syncTimer = null;
+      syncNow({ silent: true }).catch(() => {});
+    }, SYNC_RETRY_DELAY);
+  }
+
+  function timestampOf(value) {
+    if (!value) return 0;
+    const parsed = Date.parse(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+
+  function recordUpdatedAt(record) {
+    return timestampOf(record?.updatedAt || record?.at || record?.lastSeenAt);
+  }
+
+  function normalizeRecords(records = {}) {
+    const normalized = {};
+    Object.entries(records).forEach(([id, record]) => {
+      normalized[id] = {
+        ...record,
+        updatedAt: record.updatedAt || record.at || nowIso(),
+      };
+    });
+    return normalized;
+  }
+
+  function normalizeMemoryRecords(records = {}) {
+    const normalized = {};
+    Object.entries(records).forEach(([id, record]) => {
+      normalized[id] = {
+        ...createMemoryRecord(),
+        ...record,
+        updatedAt: record.updatedAt || record.lastSeenAt || nowIso(),
+      };
+    });
+    return normalized;
+  }
+
+  function normalizeBookmarkMeta(meta = {}, bookmarked = new Set()) {
+    const normalized = {};
+    Object.entries(meta).forEach(([id, record]) => {
+      normalized[id] = {
+        value: record?.value !== false,
+        updatedAt: record?.updatedAt || nowIso(),
+      };
+    });
+    bookmarked.forEach((id) => {
+      if (!normalized[id]) {
+        normalized[id] = { value: true, updatedAt: nowIso() };
+      }
+    });
+    return normalized;
+  }
+
+  function bookmarkedSetFromMeta(meta = {}) {
+    return new Set(Object.entries(meta).filter(([, record]) => record?.value !== false).map(([id]) => id));
+  }
+
+  function captureSession() {
+    return {
+      view: state.view,
+      activeKnowledgeChapter: state.activeKnowledgeChapter,
+      activeTopicId: state.activeTopicId,
+      topicQuestionIds: state.topicQuestionIds,
+      chapter: state.chapter,
+      type: state.type,
+      mode: state.mode,
+      index: state.index,
+      memoryScopeKey: state.memoryScopeKey,
+      memoryPhase: state.memoryPhase,
+      currentQuestionId: currentQuestion()?.id || null,
+      updatedAt: nowIso(),
+    };
+  }
+
+  function applySession(session = {}) {
+    if (!session) return;
+    if (session.view) state.view = session.view;
+    if (session.activeKnowledgeChapter) state.activeKnowledgeChapter = session.activeKnowledgeChapter;
+    if (Object.prototype.hasOwnProperty.call(session, "activeTopicId")) state.activeTopicId = session.activeTopicId;
+    if (Object.prototype.hasOwnProperty.call(session, "topicQuestionIds")) state.topicQuestionIds = session.topicQuestionIds;
+    if (session.chapter) state.chapter = session.chapter;
+    if (session.type) state.type = session.type;
+    if (session.mode) state.mode = session.mode;
+    if (typeof session.index === "number") state.index = session.index;
+    if (session.memoryScopeKey) state.memoryScopeKey = session.memoryScopeKey;
+    if (session.memoryPhase) state.memoryPhase = session.memoryPhase;
+  }
+
+  function localSyncSnapshot() {
+    return {
+      schemaVersion: 1,
+      session: captureSession(),
+      records: deepClone(state.records),
+      bookmarked: Object.fromEntries(
+        Object.entries(state.bookmarkedMeta).map(([id, record]) => [id, { ...record }]),
+      ),
+      memoryRecords: deepClone(state.memoryRecords),
+    };
+  }
+
+  function deepClone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function mergeTimestampedMap(localMap = {}, remoteMap = {}) {
+    const merged = deepClone(localMap || {});
+    Object.entries(remoteMap || {}).forEach(([id, remoteRecord]) => {
+      const localRecord = merged[id];
+      const localTime = recordUpdatedAt(localRecord);
+      const remoteTime = recordUpdatedAt(remoteRecord);
+      if (!localRecord || remoteTime >= localTime) {
+        merged[id] = deepClone(remoteRecord);
+      }
+    });
+    return merged;
+  }
+
+  function mergeBookmarkMeta(localMeta = {}, remoteMeta = {}) {
+    const merged = deepClone(localMeta || {});
+    Object.entries(remoteMeta || {}).forEach(([id, remoteRecord]) => {
+      const localRecord = merged[id];
+      const localTime = timestampOf(localRecord?.updatedAt);
+      const remoteTime = timestampOf(remoteRecord?.updatedAt);
+      if (!localRecord || remoteTime >= localTime) {
+        merged[id] = {
+          value: remoteRecord?.value !== false,
+          updatedAt: remoteRecord?.updatedAt || nowIso(),
+        };
+      }
+    });
+    return merged;
+  }
+
+  function mergeSession(localSession = {}, remoteSession = {}) {
+    if (!remoteSession) return deepClone(localSession || {});
+    if (!localSession?.updatedAt) return deepClone(remoteSession);
+    return timestampOf(remoteSession.updatedAt) >= timestampOf(localSession.updatedAt)
+      ? deepClone(remoteSession)
+      : deepClone(localSession);
+  }
+
+  function mergeSyncSnapshots(localSnapshot, remoteSnapshot) {
+    const merged = {
+      schemaVersion: 1,
+      session: mergeSession(localSnapshot.session, remoteSnapshot.session),
+      records: mergeTimestampedMap(localSnapshot.records, remoteSnapshot.records),
+      bookmarked: mergeBookmarkMeta(localSnapshot.bookmarked, remoteSnapshot.bookmarked),
+      memoryRecords: mergeTimestampedMap(localSnapshot.memoryRecords, remoteSnapshot.memoryRecords),
+    };
+    return merged;
+  }
+
+  function applyMergedSnapshot(snapshot) {
+    if (!snapshot) return;
+    state.records = normalizeRecords(snapshot.records || {});
+    state.bookmarkedMeta = normalizeBookmarkMeta(snapshot.bookmarked || {});
+    state.bookmarked = bookmarkedSetFromMeta(state.bookmarkedMeta);
+    state.memoryRecords = normalizeMemoryRecords(snapshot.memoryRecords || {});
+    if (snapshot.session) {
+      applySession(snapshot.session);
+    }
+    state.wrong = new Set(
+      Object.entries(state.records)
+        .filter(([, record]) => record && !record.correct)
+        .map(([id]) => id),
+    );
   }
 
   function clearFeedbackTimer() {
@@ -204,18 +465,23 @@
     try {
       const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
       if (current) {
-        state.records = current.records || {};
+        state.records = normalizeRecords(current.records || {});
         state.wrong = new Set(current.wrong || []);
-        state.bookmarked = new Set(current.bookmarked || []);
-        state.memoryRecords = current.memoryRecords || {};
+        state.bookmarkedMeta = normalizeBookmarkMeta(current.bookmarkedMeta || {}, new Set(current.bookmarked || []));
+        state.bookmarked = bookmarkedSetFromMeta(state.bookmarkedMeta);
+        state.memoryRecords = normalizeMemoryRecords(current.memoryRecords || {});
         state.memoryQueue = Array.isArray(current.memoryQueue) ? current.memoryQueue : [];
         state.memoryScopeKey = current.memoryScopeKey || "";
+        if (current.session) {
+          applySession(current.session);
+        }
         return;
       }
       const legacy = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY) || "{}");
-      state.records = legacy.records || {};
+      state.records = normalizeRecords(legacy.records || {});
       state.wrong = new Set(legacy.wrong || []);
-      state.bookmarked = new Set(legacy.bookmarked || []);
+      state.bookmarkedMeta = normalizeBookmarkMeta({}, new Set(legacy.bookmarked || []));
+      state.bookmarked = bookmarkedSetFromMeta(state.bookmarkedMeta);
       state.memoryRecords = {};
       state.memoryQueue = [];
       state.memoryScopeKey = "";
@@ -223,24 +489,31 @@
       state.records = {};
       state.wrong = new Set();
       state.bookmarked = new Set();
+      state.bookmarkedMeta = {};
       state.memoryRecords = {};
       state.memoryQueue = [];
       state.memoryScopeKey = "";
     }
   }
 
-  function saveState() {
+  function saveState(options = {}) {
+    state.session = captureSession();
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
         records: state.records,
         wrong: [...state.wrong],
         bookmarked: [...state.bookmarked],
+        bookmarkedMeta: state.bookmarkedMeta,
         memoryRecords: state.memoryRecords,
         memoryQueue: state.memoryQueue,
         memoryScopeKey: state.memoryScopeKey,
+        session: state.session,
       }),
     );
+    if (!options.skipSyncMark) {
+      markSyncDirty();
+    }
   }
 
   async function loadData() {
@@ -257,6 +530,175 @@
       knowledgeMap = await response.json();
     }
     return { questionBank, knowledgeMap };
+  }
+
+  function configReady() {
+    return Boolean(window.MaogaiSyncClient && window.MAOGAI_SYNC_CONFIG?.databaseUrl);
+  }
+
+  function renderSyncPanel() {
+    if (!els.syncStatus || !els.syncMeta || !els.syncGroupInput || !els.syncDeviceInput) return;
+    els.syncGroupInput.value = state.sync.groupCode || "";
+    els.syncDeviceInput.value = state.sync.deviceName || "";
+    const syncedAt = state.sync.lastSyncedAt ? new Date(state.sync.lastSyncedAt).toLocaleString("zh-CN") : "未同步";
+    const revision = state.sync.revision ? `r${state.sync.revision}` : "r0";
+    const device = state.sync.deviceName || "未命名设备";
+    els.syncStatus.textContent = state.sync.lastError
+      ? `${state.sync.status}：${state.sync.lastError}`
+      : state.sync.status;
+    els.syncMeta.textContent = state.sync.groupCode
+      ? `同步码 ${state.sync.groupCode} · ${device} · ${revision} · 最近同步 ${syncedAt}`
+      : `本地记录仅保存在当前设备。创建同步码后，手机和电脑就能共享同一份学习档案。`;
+    if (els.syncCreateButton) els.syncCreateButton.disabled = state.sync.busy;
+    if (els.syncJoinButton) els.syncJoinButton.disabled = state.sync.busy;
+    if (els.syncNowButton) els.syncNowButton.disabled = state.sync.busy || !state.sync.groupCode;
+    if (els.syncGroupInput) els.syncGroupInput.disabled = state.sync.busy;
+    if (els.syncDeviceInput) els.syncDeviceInput.disabled = state.sync.busy;
+  }
+
+  function prepareSnapshotForCloud(snapshot) {
+    const next = deepClone(snapshot);
+    next.meta = {
+      schemaVersion: 1,
+      updatedAt: nowIso(),
+      deviceId: state.sync.deviceId,
+      deviceName: state.sync.deviceName,
+    };
+    return next;
+  }
+
+  function cloudPayloadFromRow(row) {
+    if (!row?.state) {
+      return {
+        schemaVersion: 1,
+        session: {},
+        records: {},
+        bookmarked: {},
+        memoryRecords: {},
+      };
+    }
+    return typeof row.state === "string" ? JSON.parse(row.state) : row.state;
+  }
+
+  async function createCloudGroup() {
+    ensureSyncIdentity();
+    const inputCode = (els.syncGroupInput?.value || "").trim().toUpperCase();
+    const groupCode = inputCode || MaogaiSyncClient.randomCode(8);
+    const snapshot = prepareSnapshotForCloud(localSyncSnapshot());
+    state.sync.groupCode = groupCode;
+    touchSyncStatus("正在创建云档案…");
+
+    const existing = await MaogaiSyncClient.fetchGroup(groupCode);
+    if (existing) {
+      throw new Error("同步码已存在，请换一个再创建");
+    }
+
+    const created = await MaogaiSyncClient.createGroup(groupCode, snapshot, state.sync);
+    if (!created) {
+      throw new Error("云档案创建失败");
+    }
+
+    state.sync.revision = Number(created.revision || 0);
+    state.sync.lastSyncedAt = nowIso();
+    state.sync.dirty = false;
+    saveSyncState();
+    applyMergedSnapshot(cloudPayloadFromRow(created));
+    saveState({ skipSyncMark: true });
+    touchSyncStatus("云档案已创建");
+    render();
+  }
+
+  async function joinCloudGroup() {
+    ensureSyncIdentity();
+    const groupCode = (els.syncGroupInput?.value || "").trim().toUpperCase();
+    if (!groupCode) {
+      throw new Error("请输入同步码");
+    }
+    state.sync.groupCode = groupCode;
+    touchSyncStatus("正在加入云档案…");
+    const row = await MaogaiSyncClient.fetchGroup(groupCode);
+    if (!row) {
+      throw new Error("没找到这个同步码");
+    }
+    const remote = cloudPayloadFromRow(row);
+    const merged = mergeSyncSnapshots(localSyncSnapshot(), remote);
+    const current = await MaogaiSyncClient.updateGroup(groupCode, Number(row.revision || 0), prepareSnapshotForCloud(merged), state.sync);
+    if (!current) {
+      throw new Error("加入成功，但云端状态刚好被其他设备更新了，请再同步一次");
+    }
+    state.sync.revision = Number(current.revision || 0);
+    state.sync.lastSyncedAt = nowIso();
+    state.sync.dirty = false;
+    saveSyncState();
+    applyMergedSnapshot(cloudPayloadFromRow(current));
+    saveState({ skipSyncMark: true });
+    touchSyncStatus("已加入云档案");
+    render();
+  }
+
+  async function syncNow(options = {}) {
+    if (!configReady()) return;
+    if (!state.sync.groupCode) {
+      if (!options.silent) touchSyncStatus("还没有同步码");
+      return;
+    }
+    if (state.sync.busy) return;
+    ensureSyncIdentity();
+    state.sync.busy = true;
+    if (!options.silent) touchSyncStatus("正在同步…");
+    renderSyncPanel();
+
+    try {
+      let row = await MaogaiSyncClient.fetchGroup(state.sync.groupCode);
+      const localSnapshot = localSyncSnapshot();
+      if (!row) {
+        row = await MaogaiSyncClient.createGroup(state.sync.groupCode, prepareSnapshotForCloud(localSnapshot), state.sync);
+        if (!row) {
+          throw new Error("创建云档案失败");
+        }
+        applyMergedSnapshot(cloudPayloadFromRow(row));
+        saveState({ skipSyncMark: true });
+      } else {
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          const remote = cloudPayloadFromRow(row);
+          const merged = mergeSyncSnapshots(localSnapshot, remote);
+          const updated = await MaogaiSyncClient.updateGroup(
+            state.sync.groupCode,
+            Number(row.revision || 0),
+            prepareSnapshotForCloud(merged),
+            state.sync,
+          );
+          if (updated) {
+            row = updated;
+            applyMergedSnapshot(merged);
+            saveState({ skipSyncMark: true });
+            break;
+          }
+          row = await MaogaiSyncClient.fetchGroup(state.sync.groupCode);
+          if (!row) {
+            throw new Error("云档案在同步途中消失了");
+          }
+        }
+      }
+
+      state.sync.revision = Number(row.revision || 0);
+      state.sync.lastSyncedAt = nowIso();
+      state.sync.dirty = false;
+      state.sync.lastError = "";
+      state.sync.status = "同步完成";
+      saveSyncState();
+      renderSyncPanel();
+      if (!options.silent) render();
+    } catch (error) {
+      state.sync.lastError = error?.message || "同步失败";
+      state.sync.status = "同步失败";
+      saveSyncState();
+      renderSyncPanel();
+      if (!options.silent) console.warn("Sync failed", error);
+    } finally {
+      state.sync.busy = false;
+      renderSyncPanel();
+    }
   }
 
   function baseScopedQuestions() {
@@ -491,6 +933,7 @@
     if (!record.previewed) {
       record.previewed = true;
       record.lastSeenAt = new Date().toISOString();
+      record.updatedAt = record.lastSeenAt;
       saveState();
     }
   }
@@ -502,6 +945,7 @@
     const record = memoryRecordFor(question.id);
     record.previewed = true;
     record.lastSeenAt = new Date().toISOString();
+    record.updatedAt = record.lastSeenAt;
     entry.phase = "recall";
     state.memoryPhase = "recall";
     state.selected = new Set();
@@ -548,6 +992,7 @@
     record.lastCorrect = correct;
     record.lastAnswer = userAnswer(question);
     record.lastSeenAt = new Date().toISOString();
+    record.updatedAt = record.lastSeenAt;
     if (correct) {
       record.correct += 1;
       record.passed = true;
@@ -586,12 +1031,14 @@
       state.fillValue = els.fillInput.value;
     }
     const correct = answerIsCorrect(question);
+    const now = new Date().toISOString();
     state.submitted = true;
     state.lastCorrect = correct;
     state.records[question.id] = {
       correct,
       answer: userAnswer(question),
-      at: new Date().toISOString(),
+      at: now,
+      updatedAt: now,
     };
     if (correct) state.wrong.delete(question.id);
     else state.wrong.add(question.id);
@@ -623,8 +1070,14 @@
   function toggleBookmark() {
     const question = currentQuestion();
     if (!question) return;
-    if (state.bookmarked.has(question.id)) state.bookmarked.delete(question.id);
-    else state.bookmarked.add(question.id);
+    const now = new Date().toISOString();
+    if (state.bookmarked.has(question.id)) {
+      state.bookmarked.delete(question.id);
+      state.bookmarkedMeta[question.id] = { value: false, updatedAt: now };
+    } else {
+      state.bookmarked.add(question.id);
+      state.bookmarkedMeta[question.id] = { value: true, updatedAt: now };
+    }
     saveState();
     render();
   }
@@ -975,6 +1428,7 @@
     renderStats();
     renderAnswerSheet();
     renderModes();
+    renderSyncPanel();
   }
 
   function bindEvents() {
@@ -1040,18 +1494,68 @@
     document.querySelectorAll(".mode").forEach((button) => {
       button.addEventListener("click", () => setFilters({ mode: button.dataset.mode }));
     });
+    if (els.syncGroupInput) {
+      els.syncGroupInput.addEventListener("input", () => {
+        state.sync.groupCode = els.syncGroupInput.value.trim().toUpperCase();
+        saveSyncState();
+        renderSyncPanel();
+      });
+    }
+    if (els.syncDeviceInput) {
+      els.syncDeviceInput.addEventListener("input", () => {
+        state.sync.deviceName = els.syncDeviceInput.value.trim() || createDefaultDeviceName();
+        saveSyncState();
+        renderSyncPanel();
+      });
+    }
+    if (els.syncCreateButton) {
+      els.syncCreateButton.addEventListener("click", async () => {
+        try {
+          await createCloudGroup();
+        } catch (error) {
+          touchSyncStatus("创建失败", error?.message || "请检查网络后重试");
+        }
+      });
+    }
+    if (els.syncJoinButton) {
+      els.syncJoinButton.addEventListener("click", async () => {
+        try {
+          await joinCloudGroup();
+        } catch (error) {
+          touchSyncStatus("加入失败", error?.message || "请检查同步码后重试");
+        }
+      });
+    }
+    if (els.syncNowButton) {
+      els.syncNowButton.addEventListener("click", async () => {
+        await syncNow();
+      });
+    }
     els.resetButton.addEventListener("click", () => {
       if (!confirm("确定清空本浏览器中的答题记录、错题、收藏和记忆进度吗？")) return;
       state.records = {};
       state.wrong = new Set();
       state.bookmarked = new Set();
+      state.bookmarkedMeta = {};
       state.memoryRecords = {};
       state.memoryQueue = [];
       state.memoryScopeKey = "";
+      state.sync.dirty = true;
       saveState();
       if (state.mode === "memory") rebuildMemoryQueue(false);
       resetInteraction();
       render();
+    });
+    window.addEventListener("online", () => {
+      if (state.sync.groupCode) {
+        touchSyncStatus("网络恢复，准备同步…");
+        scheduleSyncSoon();
+      }
+    });
+    window.addEventListener("visibilitychange", () => {
+      if (!document.hidden && state.sync.groupCode && state.sync.dirty) {
+        scheduleSyncSoon();
+      }
     });
   }
 
@@ -1059,6 +1563,9 @@
     setupInstallPrompt();
     registerServiceWorker();
     loadSavedState();
+    loadSyncState();
+    ensureSyncIdentity();
+    saveSyncState();
     bindEvents();
     try {
       const loaded = await loadData();
@@ -1071,6 +1578,9 @@
         state.view = "knowledge";
       }
       render();
+      if (state.sync.groupCode && configReady()) {
+        scheduleSyncSoon();
+      }
     } catch (error) {
       els.questionTitle.textContent = "题库加载失败";
       els.questionStem.textContent = "请确认 questions.json 或 questions-data.js 与网页文件在同一目录。";
