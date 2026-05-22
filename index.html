@@ -134,6 +134,29 @@
           </div>
         </section>
 
+        <section class="review-section sync-section">
+          <div class="section-head">
+            <h3>同步中心</h3>
+            <button class="text-button" id="syncNowButton" type="button">立即同步</button>
+          </div>
+          <div class="sync-panel">
+            <label class="sync-field">
+              <span>同步码</span>
+              <input id="syncGroupInput" type="text" placeholder="输入或创建同步码" autocomplete="off" />
+            </label>
+            <label class="sync-field">
+              <span>设备名</span>
+              <input id="syncDeviceInput" type="text" placeholder="例如：iPhone / 电脑" autocomplete="off" />
+            </label>
+            <div class="sync-actions">
+              <button class="primary" id="syncCreateButton" type="button">创建云档案</button>
+              <button class="secondary" id="syncJoinButton" type="button">加入云档案</button>
+            </div>
+            <p class="sync-status" id="syncStatus">未连接云同步</p>
+            <p class="sync-meta" id="syncMeta">本地记录仅保存在当前设备。</p>
+          </div>
+        </section>
+
         <section class="review-section">
           <div class="section-head">
             <h3>答题卡</h3>
@@ -146,6 +169,8 @@
 
     <script src="./questions-data.js"></script>
     <script src="./knowledge-map-data.js"></script>
+    <script src="./sync-config.js"></script>
+    <script src="./sync-client.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>
