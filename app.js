@@ -54,6 +54,10 @@
     accuracyLabel: document.querySelector("#accuracyLabel"),
     wrongLabel: document.querySelector("#wrongLabel"),
     answerSheet: document.querySelector("#answerSheet"),
+    wrongBookSection: document.querySelector("#wrongBookSection"),
+    wrongBookSummary: document.querySelector("#wrongBookSummary"),
+    wrongBookFilters: document.querySelector("#wrongBookFilters"),
+    wrongBookNote: document.querySelector("#wrongBookNote"),
     resetButton: document.querySelector("#resetButton"),
     installCard: document.querySelector("#installCard"),
     installButton: document.querySelector("#installButton"),
@@ -84,6 +88,8 @@
     lastCorrect: false,
     records: {},
     wrong: new Set(),
+    wrongHistory: {},
+    wrongBookFilter: "all",
     bookmarked: new Set(),
     bookmarkedMeta: {},
     memoryRecords: {},
@@ -119,6 +125,119 @@
       lastAnswer: "",
       lastSeenAt: null,
     };
+  }
+
+  function createWrongHistoryRecord() {
+    return {
+      attempts: 0,
+      wrongs: 0,
+      firstWrongAt: null,
+      lastWrongAt: null,
+      firstCorrectAt: null,
+      lastCorrectAt: null,
+      masteredAt: null,
+      masteredWrongCount: null,
+      currentWrong: false,
+      mastered: false,
+      lastAnswer: "",
+      lastCorrect: null,
+      updatedAt: null,
+    };
+  }
+
+  function normalizeWrongHistoryRecord(record = {}, fallbackAt = nowIso()) {
+    const normalized = {
+      ...createWrongHistoryRecord(),
+      ...record,
+    };
+    normalized.attempts = Number(record.attempts || 0);
+    normalized.wrongs = Number(record.wrongs || 0);
+    normalized.firstWrongAt = record.firstWrongAt || null;
+    normalized.lastWrongAt = record.lastWrongAt || null;
+    normalized.firstCorrectAt = record.firstCorrectAt || null;
+    normalized.lastCorrectAt = record.lastCorrectAt || null;
+    normalized.masteredAt = record.masteredAt || null;
+    normalized.masteredWrongCount = record.masteredWrongCount == null ? null : Number(record.masteredWrongCount);
+    normalized.currentWrong = Boolean(record.currentWrong);
+    normalized.mastered = Boolean(record.mastered || record.firstCorrectAt);
+    normalized.lastAnswer = record.lastAnswer || "";
+    normalized.lastCorrect = typeof record.lastCorrect === "boolean" ? record.lastCorrect : null;
+    normalized.updatedAt = record.updatedAt || record.lastSeenAt || fallbackAt;
+    if (normalized.masteredWrongCount == null && normalized.firstCorrectAt && normalized.wrongs > 0) {
+      normalized.masteredWrongCount = normalized.wrongs;
+    }
+    return normalized;
+  }
+
+  function normalizeWrongHistory(records = {}, fallbackRecords = {}, wrongIds = new Set()) {
+    const normalized = {};
+    Object.entries(records).forEach(([id, record]) => {
+      normalized[id] = normalizeWrongHistoryRecord(record);
+    });
+
+    const now = nowIso();
+    Object.entries(fallbackRecords).forEach(([id, record]) => {
+      if (record && record.correct === false && !normalized[id]) {
+        normalized[id] = normalizeWrongHistoryRecord(
+          {
+            attempts: 1,
+            wrongs: 1,
+            firstWrongAt: record.updatedAt || record.at || now,
+            lastWrongAt: record.updatedAt || record.at || now,
+            currentWrong: true,
+            mastered: false,
+            lastAnswer: record.answer || "",
+            lastCorrect: false,
+            updatedAt: record.updatedAt || record.at || now,
+          },
+          now,
+        );
+      }
+    });
+
+    wrongIds.forEach((id) => {
+      if (!normalized[id]) {
+        normalized[id] = normalizeWrongHistoryRecord(
+          {
+            attempts: 1,
+            wrongs: 1,
+            firstWrongAt: now,
+            lastWrongAt: now,
+            currentWrong: true,
+            mastered: false,
+            updatedAt: now,
+          },
+          now,
+        );
+      }
+    });
+
+    return normalized;
+  }
+
+  function wrongHistoryRecordFor(questionId) {
+    return state.wrongHistory[questionId] || null;
+  }
+
+  function ensureWrongHistoryRecord(questionId) {
+    if (!state.wrongHistory[questionId]) {
+      state.wrongHistory[questionId] = createWrongHistoryRecord();
+    }
+    return state.wrongHistory[questionId];
+  }
+
+  function syncCurrentWrongSetFromHistory() {
+    state.wrong = new Set(
+      Object.entries(state.wrongHistory)
+        .filter(([, record]) => record?.currentWrong)
+        .map(([id]) => id),
+    );
+  }
+
+  function autoBookmarkQuestion(questionId, when = nowIso()) {
+    if (state.bookmarked.has(questionId)) return;
+    state.bookmarked.add(questionId);
+    state.bookmarkedMeta[questionId] = { value: true, updatedAt: when };
   }
 
   function memoryRecordFor(questionId) {
@@ -272,6 +391,7 @@
       index: state.index,
       memoryScopeKey: state.memoryScopeKey,
       memoryPhase: state.memoryPhase,
+      wrongBookFilter: state.wrongBookFilter,
       currentQuestionId: currentQuestion()?.id || null,
       updatedAt: nowIso(),
     };
@@ -289,6 +409,7 @@
     if (typeof session.index === "number") state.index = session.index;
     if (session.memoryScopeKey) state.memoryScopeKey = session.memoryScopeKey;
     if (session.memoryPhase) state.memoryPhase = session.memoryPhase;
+    if (session.wrongBookFilter) state.wrongBookFilter = session.wrongBookFilter;
   }
 
   function localSyncSnapshot() {
@@ -296,6 +417,7 @@
       schemaVersion: 1,
       session: captureSession(),
       records: deepClone(state.records),
+      wrongHistory: deepClone(state.wrongHistory),
       bookmarked: Object.fromEntries(
         Object.entries(state.bookmarkedMeta).map(([id, record]) => [id, { ...record }]),
       ),
@@ -349,6 +471,7 @@
       schemaVersion: 1,
       session: mergeSession(localSnapshot.session, remoteSnapshot.session),
       records: mergeTimestampedMap(localSnapshot.records, remoteSnapshot.records),
+      wrongHistory: mergeTimestampedMap(localSnapshot.wrongHistory, remoteSnapshot.wrongHistory),
       bookmarked: mergeBookmarkMeta(localSnapshot.bookmarked, remoteSnapshot.bookmarked),
       memoryRecords: mergeTimestampedMap(localSnapshot.memoryRecords, remoteSnapshot.memoryRecords),
     };
@@ -358,17 +481,137 @@
   function applyMergedSnapshot(snapshot) {
     if (!snapshot) return;
     state.records = normalizeRecords(snapshot.records || {});
+    state.wrongHistory = normalizeWrongHistory(snapshot.wrongHistory || {}, snapshot.records || {});
     state.bookmarkedMeta = normalizeBookmarkMeta(snapshot.bookmarked || {});
     state.bookmarked = bookmarkedSetFromMeta(state.bookmarkedMeta);
     state.memoryRecords = normalizeMemoryRecords(snapshot.memoryRecords || {});
     if (snapshot.session) {
       applySession(snapshot.session);
     }
-    state.wrong = new Set(
-      Object.entries(state.records)
-        .filter(([, record]) => record && !record.correct)
-        .map(([id]) => id),
-    );
+    syncCurrentWrongSetFromHistory();
+  }
+
+  function wrongBookLevel(record) {
+    if (!record || Number(record.wrongs || 0) <= 0) return null;
+    if (record.currentWrong) return "unmastered";
+    const masteredWrongCount = Number(record.masteredWrongCount || record.wrongs || 0);
+    if (masteredWrongCount <= 1) return "once";
+    if (masteredWrongCount === 2) return "twice";
+    return "thrice";
+  }
+
+  function wrongBookLevelOrder(level) {
+    return { unmastered: 0, thrice: 1, twice: 2, once: 3 }[level] ?? 9;
+  }
+
+  function wrongBookLevelLabel(level) {
+    return {
+      all: "全部",
+      unmastered: "仍未掌握",
+      once: "一错即会",
+      twice: "二错才会",
+      thrice: "三错及以上",
+    }[level] || "全部";
+  }
+
+  function wrongBookLevelClass(level) {
+    return {
+      unmastered: "wrongbook-unmastered",
+      once: "wrongbook-once",
+      twice: "wrongbook-twice",
+      thrice: "wrongbook-thrice",
+    }[level] || "";
+  }
+
+  function wrongBookMatchesFilter(record, filter) {
+    if (!record || Number(record.wrongs || 0) <= 0) return false;
+    if (filter === "all") return true;
+    return wrongBookLevel(record) === filter;
+  }
+
+  function wrongBookPoolStats(pool) {
+    const records = pool.map((question) => wrongHistoryRecordFor(question.id)).filter(Boolean);
+    return {
+      all: records.length,
+      unmastered: records.filter((record) => wrongBookLevel(record) === "unmastered").length,
+      once: records.filter((record) => wrongBookLevel(record) === "once").length,
+      twice: records.filter((record) => wrongBookLevel(record) === "twice").length,
+      thrice: records.filter((record) => wrongBookLevel(record) === "thrice").length,
+      mastered: records.filter((record) => !record.currentWrong).length,
+    };
+  }
+
+  function wrongBookSummaryLabel(filter = "all") {
+    return wrongBookLevelLabel(filter);
+  }
+
+  function sortWrongBookQuestions(questions) {
+    return questions.slice().sort((a, b) => {
+      const recordA = wrongHistoryRecordFor(a.id);
+      const recordB = wrongHistoryRecordFor(b.id);
+      const levelA = wrongBookLevel(recordA);
+      const levelB = wrongBookLevel(recordB);
+      const orderA = wrongBookLevelOrder(levelA);
+      const orderB = wrongBookLevelOrder(levelB);
+      if (orderA !== orderB) return orderA - orderB;
+      const timeA = timestampOf(recordA?.lastWrongAt || recordA?.updatedAt);
+      const timeB = timestampOf(recordB?.lastWrongAt || recordB?.updatedAt);
+      if (timeA !== timeB) return timeB - timeA;
+      if (a.chapter !== b.chapter) return String(a.chapter).localeCompare(String(b.chapter), "zh-Hans-CN");
+      return Number(a.number || 0) - Number(b.number || 0);
+    });
+  }
+
+  function updateWrongHistory(question, correct, answer, { trackCurrentRecord = true } = {}) {
+    const now = nowIso();
+    const historyExists = Boolean(state.wrongHistory[question.id]);
+    let history = null;
+
+    if (!historyExists && !correct) {
+      history = ensureWrongHistoryRecord(question.id);
+    } else if (historyExists) {
+      history = ensureWrongHistoryRecord(question.id);
+    }
+
+    if (history) {
+      history.attempts += 1;
+      history.lastAnswer = answer;
+      history.lastCorrect = correct;
+      history.updatedAt = now;
+
+      if (correct) {
+        history.lastCorrectAt = now;
+        if (!history.firstCorrectAt) {
+          history.firstCorrectAt = now;
+          history.masteredWrongCount = history.wrongs;
+        }
+        history.masteredAt = history.masteredAt || now;
+        history.currentWrong = false;
+        history.mastered = true;
+      } else {
+        const firstTrackedWrong = !history.firstWrongAt;
+        history.wrongs += 1;
+        history.firstWrongAt = history.firstWrongAt || now;
+        history.lastWrongAt = now;
+        history.currentWrong = true;
+        history.mastered = false;
+        if (firstTrackedWrong) {
+          autoBookmarkQuestion(question.id, now);
+        }
+      }
+      syncCurrentWrongSetFromHistory();
+    }
+
+    if (trackCurrentRecord) {
+      state.records[question.id] = {
+        correct,
+        answer,
+        at: now,
+        updatedAt: now,
+      };
+    }
+
+    return { now, history };
   }
 
   function clearFeedbackTimer() {
@@ -470,7 +713,12 @@
       const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
       if (current) {
         state.records = normalizeRecords(current.records || {});
-        state.wrong = new Set(current.wrong || []);
+        state.wrongHistory = normalizeWrongHistory(
+          current.wrongHistory || {},
+          current.records || {},
+          new Set(current.wrong || []),
+        );
+        state.wrongBookFilter = current.wrongBookFilter || "all";
         state.bookmarkedMeta = normalizeBookmarkMeta(current.bookmarkedMeta || {}, new Set(current.bookmarked || []));
         state.bookmarked = bookmarkedSetFromMeta(state.bookmarkedMeta);
         state.memoryRecords = normalizeMemoryRecords(current.memoryRecords || {});
@@ -479,34 +727,42 @@
         if (current.session) {
           applySession(current.session);
         }
+        syncCurrentWrongSetFromHistory();
         return;
       }
       const legacy = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY) || "{}");
       state.records = normalizeRecords(legacy.records || {});
-      state.wrong = new Set(legacy.wrong || []);
+      state.wrongHistory = normalizeWrongHistory({}, legacy.records || {}, new Set(legacy.wrong || []));
       state.bookmarkedMeta = normalizeBookmarkMeta({}, new Set(legacy.bookmarked || []));
       state.bookmarked = bookmarkedSetFromMeta(state.bookmarkedMeta);
       state.memoryRecords = {};
       state.memoryQueue = [];
       state.memoryScopeKey = "";
+      state.wrongBookFilter = "all";
+      syncCurrentWrongSetFromHistory();
     } catch {
       state.records = {};
       state.wrong = new Set();
+      state.wrongHistory = {};
       state.bookmarked = new Set();
       state.bookmarkedMeta = {};
       state.memoryRecords = {};
       state.memoryQueue = [];
       state.memoryScopeKey = "";
+      state.wrongBookFilter = "all";
     }
   }
 
   function saveState(options = {}) {
     state.session = captureSession();
+    syncCurrentWrongSetFromHistory();
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
         records: state.records,
         wrong: [...state.wrong],
+        wrongHistory: state.wrongHistory,
+        wrongBookFilter: state.wrongBookFilter,
         bookmarked: [...state.bookmarked],
         bookmarkedMeta: state.bookmarkedMeta,
         memoryRecords: state.memoryRecords,
@@ -577,6 +833,7 @@
         schemaVersion: 1,
         session: {},
         records: {},
+        wrongHistory: {},
         bookmarked: {},
         memoryRecords: {},
       };
@@ -796,6 +1053,10 @@
     if (state.mode === "wrong") {
       pool = pool.filter((question) => state.wrong.has(question.id));
     }
+    if (state.mode === "wrongbook") {
+      pool = pool.filter((question) => wrongBookMatchesFilter(wrongHistoryRecordFor(question.id), state.wrongBookFilter));
+      pool = sortWrongBookQuestions(pool);
+    }
     if (state.mode === "bookmarked") {
       pool = pool.filter((question) => state.bookmarked.has(question.id));
     }
@@ -1008,9 +1269,9 @@
       state.fillValue = els.fillInput.value;
     }
     const correct = answerIsCorrect(question);
-    const record = memoryRecordFor(question.id);
     state.submitted = true;
     state.lastCorrect = correct;
+    const record = memoryRecordFor(question.id);
     record.attempts += 1;
     record.lastCorrect = correct;
     record.lastAnswer = userAnswer(question);
@@ -1025,6 +1286,7 @@
       record.pendingRepeat = true;
       scheduleMemoryRepeat(question.id);
     }
+    updateWrongHistory(question, correct, userAnswer(question), { trackCurrentRecord: false });
     saveState();
     setFeedbackState(correct ? "correct" : "wrong");
     render();
@@ -1057,14 +1319,13 @@
     const now = new Date().toISOString();
     state.submitted = true;
     state.lastCorrect = correct;
+    updateWrongHistory(question, correct, userAnswer(question), { trackCurrentRecord: true });
     state.records[question.id] = {
       correct,
       answer: userAnswer(question),
       at: now,
       updatedAt: now,
     };
-    if (correct) state.wrong.delete(question.id);
-    else state.wrong.add(question.id);
     saveState();
     setFeedbackState(correct ? "correct" : "wrong");
     render();
@@ -1177,9 +1438,12 @@
     }
 
     const activeTopic = state.topicQuestionIds && state.activeTopicId ? findTopic(state.activeTopicId) : null;
+    const modeText = state.mode === "wrongbook"
+      ? `错题本 · ${wrongBookLevelLabel(state.wrongBookFilter || "all")}`
+      : modeLabel();
     els.currentScope.textContent = activeTopic
       ? `考点练习 · ${activeTopic.topic.title} · ${pool.length}题`
-      : `${state.chapter} · ${TYPE_LABELS[state.type]} · ${modeLabel()}`;
+      : `${state.chapter} · ${TYPE_LABELS[state.type]} · ${modeText}`;
     els.questionTitle.textContent = `${question.chapter} 第 ${question.number} 题`;
     els.questionType.textContent = TYPE_LABELS[question.type] || question.type;
     els.questionStem.textContent = question.stem;
@@ -1266,6 +1530,7 @@
   function modeLabel() {
     if (state.mode === "memory") return "记忆模式";
     if (state.mode === "wrong") return "错题复习";
+    if (state.mode === "wrongbook") return "错题本";
     if (state.mode === "bookmarked") return "收藏题";
     return "章节练习";
   }
@@ -1286,6 +1551,22 @@
       els.doneCount.textContent = String(previewed);
       els.accuracy.textContent = tested ? `${Math.round((mastered / tested) * 100)}%` : "0%";
       els.wrongCount.textContent = String(pendingRepeat);
+      return;
+    }
+
+    if (state.mode === "wrongbook") {
+      const pool = currentPool();
+      const stats = wrongBookPoolStats(baseScopedQuestions().filter((question) => wrongHistoryRecordFor(question.id)));
+      const mastered = stats.mastered;
+      const currentWrong = stats.unmastered;
+      els.totalLabel.textContent = "历史错题";
+      els.doneLabel.textContent = "已会";
+      els.accuracyLabel.textContent = "掌握率";
+      els.wrongLabel.textContent = "未掌握";
+      els.totalCount.textContent = String(stats.all);
+      els.doneCount.textContent = String(mastered);
+      els.accuracy.textContent = stats.all ? `${Math.round((mastered / stats.all) * 100)}%` : "0%";
+      els.wrongCount.textContent = String(currentWrong);
       return;
     }
 
@@ -1315,6 +1596,11 @@
           else if (record.pendingRepeat && entry?.repeated) classes.push("memory-repeat");
           else if (entry?.phase === "recall") classes.push("memory-recall");
           else if (record.previewed) classes.push("memory-preview");
+        } else if (state.mode === "wrongbook") {
+          const record = wrongHistoryRecordFor(question.id);
+          const level = wrongBookLevel(record);
+          const levelClass = wrongBookLevelClass(level);
+          if (levelClass) classes.push(levelClass);
         } else {
           const record = state.records[question.id];
           if (record) classes.push("done");
@@ -1330,6 +1616,37 @@
     document.querySelectorAll(".mode").forEach((button) => {
       button.classList.toggle("active", button.dataset.mode === state.mode);
     });
+  }
+
+  function renderWrongBookSection() {
+    if (!els.wrongBookSection || !els.wrongBookFilters || !els.wrongBookSummary || !els.wrongBookNote) return;
+    const isWrongBook = state.mode === "wrongbook";
+    els.wrongBookSection.classList.toggle("hidden", !isWrongBook);
+    if (!isWrongBook) return;
+
+    const scopedHistory = baseScopedQuestions().filter((question) => wrongHistoryRecordFor(question.id));
+    const stats = wrongBookPoolStats(scopedHistory);
+    const activeFilter = state.wrongBookFilter || "all";
+    const filters = [
+      { key: "all", label: "全部", count: stats.all, className: "" },
+      { key: "unmastered", label: "仍未掌握", count: stats.unmastered, className: "wrongbook-unmastered" },
+      { key: "thrice", label: "三错及以上", count: stats.thrice, className: "wrongbook-thrice" },
+      { key: "twice", label: "二错才会", count: stats.twice, className: "wrongbook-twice" },
+      { key: "once", label: "一错即会", count: stats.once, className: "wrongbook-once" },
+    ];
+
+    els.wrongBookSummary.textContent = stats.all
+      ? `当前筛选范围内共有 ${stats.all} 道历史错题，其中 ${stats.unmastered} 道仍未掌握。`
+      : "当前筛选范围内还没有历史错题。第一次做错会自动收藏，方便你统一回看。";
+    els.wrongBookNote.textContent = "按错误次数分层展示，颜色越深表示越难记。";
+    els.wrongBookFilters.innerHTML = filters
+      .map(
+        (filter) => `<button class="wrongbook-filter ${filter.className} ${filter.key === activeFilter ? "active" : ""}" data-wrongbook-filter="${filter.key}" type="button">
+          <span>${filter.label}</span>
+          <small>${filter.count}</small>
+        </button>`,
+      )
+      .join("");
   }
 
   function getKnowledgeChapter(chapterName) {
@@ -1451,6 +1768,7 @@
     renderStats();
     renderAnswerSheet();
     renderModes();
+    renderWrongBookSection();
     renderSyncPanel();
   }
 
@@ -1517,6 +1835,17 @@
     document.querySelectorAll(".mode").forEach((button) => {
       button.addEventListener("click", () => setFilters({ mode: button.dataset.mode }));
     });
+    if (els.wrongBookFilters) {
+      els.wrongBookFilters.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-wrongbook-filter]");
+        if (!button) return;
+        state.wrongBookFilter = button.dataset.wrongbookFilter || "all";
+        state.index = 0;
+        resetInteraction();
+        render();
+        saveState();
+      });
+    }
     if (els.syncGroupInput) {
       els.syncGroupInput.addEventListener("input", () => {
         state.sync.groupCode = els.syncGroupInput.value.trim().toUpperCase();
@@ -1554,9 +1883,11 @@
       }
     });
     els.resetButton.addEventListener("click", () => {
-      if (!confirm("确定清空本浏览器中的答题记录、错题、收藏和记忆进度吗？")) return;
+      if (!confirm("确定清空本浏览器中的答题记录、历史错题、收藏和记忆进度吗？")) return;
       state.records = {};
       state.wrong = new Set();
+      state.wrongHistory = {};
+      state.wrongBookFilter = "all";
       state.bookmarked = new Set();
       state.bookmarkedMeta = {};
       state.memoryRecords = {};

@@ -1,7 +1,7 @@
 {
   "name": "毛概复习题库",
   "short_name": "毛概题库",
-  "description": "章节练习、知识谱系、错题复习和收藏题。",
+  "description": "章节练习、错题本、知识谱系、记忆模式和收藏题。",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

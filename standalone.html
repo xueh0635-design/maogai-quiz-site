@@ -780,11 +780,123 @@ button,
   gap: 8px;
 }
 
+.sync-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.sync-field {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.sync-field input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfe;
+  color: var(--ink);
+  min-width: 0;
+}
+
+.sync-field input:focus {
+  outline: 2px solid rgba(31, 138, 95, 0.18);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
+.sync-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.sync-status {
+  margin: 0;
+  color: var(--accent-dark);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.sync-meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .mode {
   padding: 10px 12px;
   color: var(--muted);
   background: #f0f3f6;
   text-align: left;
+}
+
+.wrongbook-section {
+  display: grid;
+  gap: 12px;
+}
+
+.wrongbook-summary,
+.wrongbook-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.wrongbook-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.wrongbook-filter {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafc;
+  color: var(--ink);
+  text-align: left;
+}
+
+.wrongbook-filter span,
+.wrongbook-filter small {
+  display: block;
+}
+
+.wrongbook-filter small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.wrongbook-filter.active {
+  border-color: var(--accent);
+  background: #edf8f2;
+  color: var(--accent-dark);
+  font-weight: 800;
+}
+
+.wrongbook-filter.wrongbook-unmastered {
+  background: #fff0ed;
+}
+
+.wrongbook-filter.wrongbook-once {
+  background: #fff4e1;
+}
+
+.wrongbook-filter.wrongbook-twice {
+  background: #ffe5d3;
+}
+
+.wrongbook-filter.wrongbook-thrice {
+  background: #ffd4c7;
 }
 
 .answer-sheet {
@@ -843,6 +955,30 @@ button,
   color: #fff;
   background: var(--amber);
   border-color: var(--amber);
+}
+
+.sheet-item.wrongbook-once {
+  color: #7a4b0a;
+  background: #fff4e1;
+  border-color: #f0d39a;
+}
+
+.sheet-item.wrongbook-twice {
+  color: #8b3f18;
+  background: #ffe5d3;
+  border-color: #efb07a;
+}
+
+.sheet-item.wrongbook-thrice {
+  color: #fff;
+  background: #c85a37;
+  border-color: #c85a37;
+}
+
+.sheet-item.wrongbook-unmastered {
+  color: #fff;
+  background: #b7372d;
+  border-color: #b7372d;
 }
 
 .hidden {
@@ -1317,7 +1453,7 @@ button,
           <div class="brand-mark">毛</div>
           <div>
             <h1>毛概题库</h1>
-            <p>章节自测与错题复习</p>
+            <p>章节自测、错题本与收藏题</p>
           </div>
         </div>
 
@@ -1427,7 +1563,40 @@ button,
             <button class="mode active" data-mode="all" type="button">章节练习</button>
             <button class="mode" data-mode="memory" type="button">记忆模式</button>
             <button class="mode" data-mode="wrong" type="button">错题复习</button>
+            <button class="mode" data-mode="wrongbook" type="button">错题本</button>
             <button class="mode" data-mode="bookmarked" type="button">收藏题</button>
+          </div>
+        </section>
+
+        <section class="review-section wrongbook-section hidden" id="wrongBookSection">
+          <div class="section-head">
+            <h3>错题本</h3>
+          </div>
+          <p class="wrongbook-summary" id="wrongBookSummary"></p>
+          <div class="wrongbook-filters" id="wrongBookFilters"></div>
+          <p class="wrongbook-note" id="wrongBookNote"></p>
+        </section>
+
+        <section class="review-section sync-section">
+          <div class="section-head">
+            <h3>同步中心</h3>
+            <button class="text-button" id="syncNowButton" type="button">立即同步</button>
+          </div>
+          <div class="sync-panel">
+            <label class="sync-field">
+              <span>同步码</span>
+              <input id="syncGroupInput" type="text" placeholder="输入或创建同步码" autocomplete="off" />
+            </label>
+            <label class="sync-field">
+              <span>设备名</span>
+              <input id="syncDeviceInput" type="text" placeholder="例如：iPhone / 电脑" autocomplete="off" />
+            </label>
+            <div class="sync-actions">
+              <button class="primary" id="syncCreateButton" type="button">创建云档案</button>
+              <button class="secondary" id="syncJoinButton" type="button">加入云档案</button>
+            </div>
+            <p class="sync-status" id="syncStatus">未连接云同步</p>
+            <p class="sync-meta" id="syncMeta">本地记录仅保存在当前设备。</p>
           </div>
         </section>
 
@@ -17441,12 +17610,16 @@ window.KNOWLEDGE_MAP = {
 };
 
     </script>
+    <script src="./sync-config.js"></script>
+    <script src="./sync-client.js"></script>
     <script>
 (function () {
   const STORAGE_KEY = "maogai-quiz-state-v2";
+  const SYNC_STORAGE_KEY = "maogai-quiz-sync-v1";
   const LEGACY_STORAGE_KEY = "maogai-quiz-state-v1";
   const AUTO_ADVANCE_DELAY = 800;
   const MEMORY_REPEAT_DELAY = 3;
+  const SYNC_RETRY_DELAY = 2500;
   const TYPE_LABELS = {
     all: "全部",
     single: "单选",
@@ -17496,9 +17669,20 @@ window.KNOWLEDGE_MAP = {
     accuracyLabel: document.querySelector("#accuracyLabel"),
     wrongLabel: document.querySelector("#wrongLabel"),
     answerSheet: document.querySelector("#answerSheet"),
+    wrongBookSection: document.querySelector("#wrongBookSection"),
+    wrongBookSummary: document.querySelector("#wrongBookSummary"),
+    wrongBookFilters: document.querySelector("#wrongBookFilters"),
+    wrongBookNote: document.querySelector("#wrongBookNote"),
     resetButton: document.querySelector("#resetButton"),
     installCard: document.querySelector("#installCard"),
     installButton: document.querySelector("#installButton"),
+    syncGroupInput: document.querySelector("#syncGroupInput"),
+    syncDeviceInput: document.querySelector("#syncDeviceInput"),
+    syncCreateButton: document.querySelector("#syncCreateButton"),
+    syncJoinButton: document.querySelector("#syncJoinButton"),
+    syncNowButton: document.querySelector("#syncNowButton"),
+    syncStatus: document.querySelector("#syncStatus"),
+    syncMeta: document.querySelector("#syncMeta"),
   };
 
   const state = {
@@ -17519,11 +17703,26 @@ window.KNOWLEDGE_MAP = {
     lastCorrect: false,
     records: {},
     wrong: new Set(),
+    wrongHistory: {},
+    wrongBookFilter: "all",
     bookmarked: new Set(),
+    bookmarkedMeta: {},
     memoryRecords: {},
     memoryQueue: [],
     memoryScopeKey: "",
     memoryPhase: "preview",
+    sync: {
+      groupCode: "",
+      deviceId: "",
+      deviceName: "",
+      revision: 0,
+      lastSyncedAt: "",
+      lastError: "",
+      status: "未连接云同步",
+      dirty: false,
+      busy: false,
+    },
+    syncTimer: null,
     installPrompt: null,
     feedbackTimer: null,
     feedbackState: null,
@@ -17543,11 +17742,491 @@ window.KNOWLEDGE_MAP = {
     };
   }
 
+  function createWrongHistoryRecord() {
+    return {
+      attempts: 0,
+      wrongs: 0,
+      firstWrongAt: null,
+      lastWrongAt: null,
+      firstCorrectAt: null,
+      lastCorrectAt: null,
+      masteredAt: null,
+      masteredWrongCount: null,
+      currentWrong: false,
+      mastered: false,
+      lastAnswer: "",
+      lastCorrect: null,
+      updatedAt: null,
+    };
+  }
+
+  function normalizeWrongHistoryRecord(record = {}, fallbackAt = nowIso()) {
+    const normalized = {
+      ...createWrongHistoryRecord(),
+      ...record,
+    };
+    normalized.attempts = Number(record.attempts || 0);
+    normalized.wrongs = Number(record.wrongs || 0);
+    normalized.firstWrongAt = record.firstWrongAt || null;
+    normalized.lastWrongAt = record.lastWrongAt || null;
+    normalized.firstCorrectAt = record.firstCorrectAt || null;
+    normalized.lastCorrectAt = record.lastCorrectAt || null;
+    normalized.masteredAt = record.masteredAt || null;
+    normalized.masteredWrongCount = record.masteredWrongCount == null ? null : Number(record.masteredWrongCount);
+    normalized.currentWrong = Boolean(record.currentWrong);
+    normalized.mastered = Boolean(record.mastered || record.firstCorrectAt);
+    normalized.lastAnswer = record.lastAnswer || "";
+    normalized.lastCorrect = typeof record.lastCorrect === "boolean" ? record.lastCorrect : null;
+    normalized.updatedAt = record.updatedAt || record.lastSeenAt || fallbackAt;
+    if (normalized.masteredWrongCount == null && normalized.firstCorrectAt && normalized.wrongs > 0) {
+      normalized.masteredWrongCount = normalized.wrongs;
+    }
+    return normalized;
+  }
+
+  function normalizeWrongHistory(records = {}, fallbackRecords = {}, wrongIds = new Set()) {
+    const normalized = {};
+    Object.entries(records).forEach(([id, record]) => {
+      normalized[id] = normalizeWrongHistoryRecord(record);
+    });
+
+    const now = nowIso();
+    Object.entries(fallbackRecords).forEach(([id, record]) => {
+      if (record && record.correct === false && !normalized[id]) {
+        normalized[id] = normalizeWrongHistoryRecord(
+          {
+            attempts: 1,
+            wrongs: 1,
+            firstWrongAt: record.updatedAt || record.at || now,
+            lastWrongAt: record.updatedAt || record.at || now,
+            currentWrong: true,
+            mastered: false,
+            lastAnswer: record.answer || "",
+            lastCorrect: false,
+            updatedAt: record.updatedAt || record.at || now,
+          },
+          now,
+        );
+      }
+    });
+
+    wrongIds.forEach((id) => {
+      if (!normalized[id]) {
+        normalized[id] = normalizeWrongHistoryRecord(
+          {
+            attempts: 1,
+            wrongs: 1,
+            firstWrongAt: now,
+            lastWrongAt: now,
+            currentWrong: true,
+            mastered: false,
+            updatedAt: now,
+          },
+          now,
+        );
+      }
+    });
+
+    return normalized;
+  }
+
+  function wrongHistoryRecordFor(questionId) {
+    return state.wrongHistory[questionId] || null;
+  }
+
+  function ensureWrongHistoryRecord(questionId) {
+    if (!state.wrongHistory[questionId]) {
+      state.wrongHistory[questionId] = createWrongHistoryRecord();
+    }
+    return state.wrongHistory[questionId];
+  }
+
+  function syncCurrentWrongSetFromHistory() {
+    state.wrong = new Set(
+      Object.entries(state.wrongHistory)
+        .filter(([, record]) => record?.currentWrong)
+        .map(([id]) => id),
+    );
+  }
+
+  function autoBookmarkQuestion(questionId, when = nowIso()) {
+    if (state.bookmarked.has(questionId)) return;
+    state.bookmarked.add(questionId);
+    state.bookmarkedMeta[questionId] = { value: true, updatedAt: when };
+  }
+
   function memoryRecordFor(questionId) {
     if (!state.memoryRecords[questionId]) {
       state.memoryRecords[questionId] = createMemoryRecord();
     }
     return state.memoryRecords[questionId];
+  }
+
+  function createDefaultDeviceName() {
+    const isPhone = /iphone|ipod/i.test(navigator.userAgent);
+    const isPad = /ipad/i.test(navigator.userAgent);
+    const platform = isPhone ? "iPhone" : isPad ? "iPad" : /android/i.test(navigator.userAgent) ? "Android" : "电脑";
+    return `${platform} · ${Math.floor(Math.random() * 9000 + 1000)}`;
+  }
+
+  function nowIso() {
+    return new Date().toISOString();
+  }
+
+  function loadSyncState() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(SYNC_STORAGE_KEY) || "null");
+      if (!raw) return;
+      state.sync.groupCode = raw.groupCode || "";
+      state.sync.deviceId = raw.deviceId || "";
+      state.sync.deviceName = raw.deviceName || "";
+      state.sync.revision = Number(raw.revision || 0);
+      state.sync.lastSyncedAt = raw.lastSyncedAt || "";
+      state.sync.lastError = raw.lastError || "";
+      state.sync.status = raw.status || "未连接云同步";
+      state.sync.dirty = Boolean(raw.dirty);
+    } catch {
+      // ignore broken sync metadata
+    }
+  }
+
+  function saveSyncState() {
+    localStorage.setItem(
+      SYNC_STORAGE_KEY,
+      JSON.stringify({
+        groupCode: state.sync.groupCode,
+        deviceId: state.sync.deviceId,
+        deviceName: state.sync.deviceName,
+        revision: state.sync.revision,
+        lastSyncedAt: state.sync.lastSyncedAt,
+        lastError: state.sync.lastError,
+        status: state.sync.status,
+        dirty: state.sync.dirty,
+      }),
+    );
+  }
+
+  function ensureSyncIdentity() {
+    if (!state.sync.deviceId) {
+      state.sync.deviceId = crypto.randomUUID ? crypto.randomUUID() : `dev-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+    }
+    if (!state.sync.deviceName) {
+      state.sync.deviceName = createDefaultDeviceName();
+    }
+  }
+
+  function touchSyncStatus(text, error = "") {
+    state.sync.status = text;
+    state.sync.lastError = error;
+    saveSyncState();
+    renderSyncPanel();
+  }
+
+  function markSyncDirty() {
+    if (!state.sync.groupCode) return;
+    if (state.sync.busy) return;
+    state.sync.dirty = true;
+    saveSyncState();
+    scheduleSyncSoon();
+  }
+
+  function scheduleSyncSoon() {
+    if (!state.sync.groupCode || state.sync.busy) return;
+    if (state.syncTimer) {
+      window.clearTimeout(state.syncTimer);
+    }
+    state.syncTimer = window.setTimeout(() => {
+      state.syncTimer = null;
+      syncNow({ silent: true }).catch(() => {});
+    }, SYNC_RETRY_DELAY);
+  }
+
+  function timestampOf(value) {
+    if (!value) return 0;
+    const parsed = Date.parse(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+
+  function recordUpdatedAt(record) {
+    return timestampOf(record?.updatedAt || record?.at || record?.lastSeenAt);
+  }
+
+  function normalizeRecords(records = {}) {
+    const normalized = {};
+    Object.entries(records).forEach(([id, record]) => {
+      normalized[id] = {
+        ...record,
+        updatedAt: record.updatedAt || record.at || nowIso(),
+      };
+    });
+    return normalized;
+  }
+
+  function normalizeMemoryRecords(records = {}) {
+    const normalized = {};
+    Object.entries(records).forEach(([id, record]) => {
+      normalized[id] = {
+        ...createMemoryRecord(),
+        ...record,
+        updatedAt: record.updatedAt || record.lastSeenAt || nowIso(),
+      };
+    });
+    return normalized;
+  }
+
+  function normalizeBookmarkMeta(meta = {}, bookmarked = new Set()) {
+    const normalized = {};
+    Object.entries(meta).forEach(([id, record]) => {
+      normalized[id] = {
+        value: record?.value !== false,
+        updatedAt: record?.updatedAt || nowIso(),
+      };
+    });
+    bookmarked.forEach((id) => {
+      if (!normalized[id]) {
+        normalized[id] = { value: true, updatedAt: nowIso() };
+      }
+    });
+    return normalized;
+  }
+
+  function bookmarkedSetFromMeta(meta = {}) {
+    return new Set(Object.entries(meta).filter(([, record]) => record?.value !== false).map(([id]) => id));
+  }
+
+  function captureSession() {
+    return {
+      view: state.view,
+      activeKnowledgeChapter: state.activeKnowledgeChapter,
+      activeTopicId: state.activeTopicId,
+      topicQuestionIds: state.topicQuestionIds,
+      chapter: state.chapter,
+      type: state.type,
+      mode: state.mode,
+      index: state.index,
+      memoryScopeKey: state.memoryScopeKey,
+      memoryPhase: state.memoryPhase,
+      wrongBookFilter: state.wrongBookFilter,
+      currentQuestionId: currentQuestion()?.id || null,
+      updatedAt: nowIso(),
+    };
+  }
+
+  function applySession(session = {}) {
+    if (!session) return;
+    if (session.view) state.view = session.view;
+    if (session.activeKnowledgeChapter) state.activeKnowledgeChapter = session.activeKnowledgeChapter;
+    if (Object.prototype.hasOwnProperty.call(session, "activeTopicId")) state.activeTopicId = session.activeTopicId;
+    if (Object.prototype.hasOwnProperty.call(session, "topicQuestionIds")) state.topicQuestionIds = session.topicQuestionIds;
+    if (session.chapter) state.chapter = session.chapter;
+    if (session.type) state.type = session.type;
+    if (session.mode) state.mode = session.mode;
+    if (typeof session.index === "number") state.index = session.index;
+    if (session.memoryScopeKey) state.memoryScopeKey = session.memoryScopeKey;
+    if (session.memoryPhase) state.memoryPhase = session.memoryPhase;
+    if (session.wrongBookFilter) state.wrongBookFilter = session.wrongBookFilter;
+  }
+
+  function localSyncSnapshot() {
+    return {
+      schemaVersion: 1,
+      session: captureSession(),
+      records: deepClone(state.records),
+      wrongHistory: deepClone(state.wrongHistory),
+      bookmarked: Object.fromEntries(
+        Object.entries(state.bookmarkedMeta).map(([id, record]) => [id, { ...record }]),
+      ),
+      memoryRecords: deepClone(state.memoryRecords),
+    };
+  }
+
+  function deepClone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function mergeTimestampedMap(localMap = {}, remoteMap = {}) {
+    const merged = deepClone(localMap || {});
+    Object.entries(remoteMap || {}).forEach(([id, remoteRecord]) => {
+      const localRecord = merged[id];
+      const localTime = recordUpdatedAt(localRecord);
+      const remoteTime = recordUpdatedAt(remoteRecord);
+      if (!localRecord || remoteTime >= localTime) {
+        merged[id] = deepClone(remoteRecord);
+      }
+    });
+    return merged;
+  }
+
+  function mergeBookmarkMeta(localMeta = {}, remoteMeta = {}) {
+    const merged = deepClone(localMeta || {});
+    Object.entries(remoteMeta || {}).forEach(([id, remoteRecord]) => {
+      const localRecord = merged[id];
+      const localTime = timestampOf(localRecord?.updatedAt);
+      const remoteTime = timestampOf(remoteRecord?.updatedAt);
+      if (!localRecord || remoteTime >= localTime) {
+        merged[id] = {
+          value: remoteRecord?.value !== false,
+          updatedAt: remoteRecord?.updatedAt || nowIso(),
+        };
+      }
+    });
+    return merged;
+  }
+
+  function mergeSession(localSession = {}, remoteSession = {}) {
+    if (!remoteSession) return deepClone(localSession || {});
+    if (!localSession?.updatedAt) return deepClone(remoteSession);
+    return timestampOf(remoteSession.updatedAt) >= timestampOf(localSession.updatedAt)
+      ? deepClone(remoteSession)
+      : deepClone(localSession);
+  }
+
+  function mergeSyncSnapshots(localSnapshot, remoteSnapshot) {
+    const merged = {
+      schemaVersion: 1,
+      session: mergeSession(localSnapshot.session, remoteSnapshot.session),
+      records: mergeTimestampedMap(localSnapshot.records, remoteSnapshot.records),
+      wrongHistory: mergeTimestampedMap(localSnapshot.wrongHistory, remoteSnapshot.wrongHistory),
+      bookmarked: mergeBookmarkMeta(localSnapshot.bookmarked, remoteSnapshot.bookmarked),
+      memoryRecords: mergeTimestampedMap(localSnapshot.memoryRecords, remoteSnapshot.memoryRecords),
+    };
+    return merged;
+  }
+
+  function applyMergedSnapshot(snapshot) {
+    if (!snapshot) return;
+    state.records = normalizeRecords(snapshot.records || {});
+    state.wrongHistory = normalizeWrongHistory(snapshot.wrongHistory || {}, snapshot.records || {});
+    state.bookmarkedMeta = normalizeBookmarkMeta(snapshot.bookmarked || {});
+    state.bookmarked = bookmarkedSetFromMeta(state.bookmarkedMeta);
+    state.memoryRecords = normalizeMemoryRecords(snapshot.memoryRecords || {});
+    if (snapshot.session) {
+      applySession(snapshot.session);
+    }
+    syncCurrentWrongSetFromHistory();
+  }
+
+  function wrongBookLevel(record) {
+    if (!record || Number(record.wrongs || 0) <= 0) return null;
+    if (record.currentWrong) return "unmastered";
+    const masteredWrongCount = Number(record.masteredWrongCount || record.wrongs || 0);
+    if (masteredWrongCount <= 1) return "once";
+    if (masteredWrongCount === 2) return "twice";
+    return "thrice";
+  }
+
+  function wrongBookLevelOrder(level) {
+    return { unmastered: 0, thrice: 1, twice: 2, once: 3 }[level] ?? 9;
+  }
+
+  function wrongBookLevelLabel(level) {
+    return {
+      all: "全部",
+      unmastered: "仍未掌握",
+      once: "一错即会",
+      twice: "二错才会",
+      thrice: "三错及以上",
+    }[level] || "全部";
+  }
+
+  function wrongBookLevelClass(level) {
+    return {
+      unmastered: "wrongbook-unmastered",
+      once: "wrongbook-once",
+      twice: "wrongbook-twice",
+      thrice: "wrongbook-thrice",
+    }[level] || "";
+  }
+
+  function wrongBookMatchesFilter(record, filter) {
+    if (!record || Number(record.wrongs || 0) <= 0) return false;
+    if (filter === "all") return true;
+    return wrongBookLevel(record) === filter;
+  }
+
+  function wrongBookPoolStats(pool) {
+    const records = pool.map((question) => wrongHistoryRecordFor(question.id)).filter(Boolean);
+    return {
+      all: records.length,
+      unmastered: records.filter((record) => wrongBookLevel(record) === "unmastered").length,
+      once: records.filter((record) => wrongBookLevel(record) === "once").length,
+      twice: records.filter((record) => wrongBookLevel(record) === "twice").length,
+      thrice: records.filter((record) => wrongBookLevel(record) === "thrice").length,
+      mastered: records.filter((record) => !record.currentWrong).length,
+    };
+  }
+
+  function wrongBookSummaryLabel(filter = "all") {
+    return wrongBookLevelLabel(filter);
+  }
+
+  function sortWrongBookQuestions(questions) {
+    return questions.slice().sort((a, b) => {
+      const recordA = wrongHistoryRecordFor(a.id);
+      const recordB = wrongHistoryRecordFor(b.id);
+      const levelA = wrongBookLevel(recordA);
+      const levelB = wrongBookLevel(recordB);
+      const orderA = wrongBookLevelOrder(levelA);
+      const orderB = wrongBookLevelOrder(levelB);
+      if (orderA !== orderB) return orderA - orderB;
+      const timeA = timestampOf(recordA?.lastWrongAt || recordA?.updatedAt);
+      const timeB = timestampOf(recordB?.lastWrongAt || recordB?.updatedAt);
+      if (timeA !== timeB) return timeB - timeA;
+      if (a.chapter !== b.chapter) return String(a.chapter).localeCompare(String(b.chapter), "zh-Hans-CN");
+      return Number(a.number || 0) - Number(b.number || 0);
+    });
+  }
+
+  function updateWrongHistory(question, correct, answer, { trackCurrentRecord = true } = {}) {
+    const now = nowIso();
+    const historyExists = Boolean(state.wrongHistory[question.id]);
+    let history = null;
+
+    if (!historyExists && !correct) {
+      history = ensureWrongHistoryRecord(question.id);
+    } else if (historyExists) {
+      history = ensureWrongHistoryRecord(question.id);
+    }
+
+    if (history) {
+      history.attempts += 1;
+      history.lastAnswer = answer;
+      history.lastCorrect = correct;
+      history.updatedAt = now;
+
+      if (correct) {
+        history.lastCorrectAt = now;
+        if (!history.firstCorrectAt) {
+          history.firstCorrectAt = now;
+          history.masteredWrongCount = history.wrongs;
+        }
+        history.masteredAt = history.masteredAt || now;
+        history.currentWrong = false;
+        history.mastered = true;
+      } else {
+        const firstTrackedWrong = !history.firstWrongAt;
+        history.wrongs += 1;
+        history.firstWrongAt = history.firstWrongAt || now;
+        history.lastWrongAt = now;
+        history.currentWrong = true;
+        history.mastered = false;
+        if (firstTrackedWrong) {
+          autoBookmarkQuestion(question.id, now);
+        }
+      }
+      syncCurrentWrongSetFromHistory();
+    }
+
+    if (trackCurrentRecord) {
+      state.records[question.id] = {
+        correct,
+        answer,
+        at: now,
+        updatedAt: now,
+      };
+    }
+
+    return { now, history };
   }
 
   function clearFeedbackTimer() {
@@ -17648,43 +18327,68 @@ window.KNOWLEDGE_MAP = {
     try {
       const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
       if (current) {
-        state.records = current.records || {};
-        state.wrong = new Set(current.wrong || []);
-        state.bookmarked = new Set(current.bookmarked || []);
-        state.memoryRecords = current.memoryRecords || {};
+        state.records = normalizeRecords(current.records || {});
+        state.wrongHistory = normalizeWrongHistory(
+          current.wrongHistory || {},
+          current.records || {},
+          new Set(current.wrong || []),
+        );
+        state.wrongBookFilter = current.wrongBookFilter || "all";
+        state.bookmarkedMeta = normalizeBookmarkMeta(current.bookmarkedMeta || {}, new Set(current.bookmarked || []));
+        state.bookmarked = bookmarkedSetFromMeta(state.bookmarkedMeta);
+        state.memoryRecords = normalizeMemoryRecords(current.memoryRecords || {});
         state.memoryQueue = Array.isArray(current.memoryQueue) ? current.memoryQueue : [];
         state.memoryScopeKey = current.memoryScopeKey || "";
+        if (current.session) {
+          applySession(current.session);
+        }
+        syncCurrentWrongSetFromHistory();
         return;
       }
       const legacy = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY) || "{}");
-      state.records = legacy.records || {};
-      state.wrong = new Set(legacy.wrong || []);
-      state.bookmarked = new Set(legacy.bookmarked || []);
+      state.records = normalizeRecords(legacy.records || {});
+      state.wrongHistory = normalizeWrongHistory({}, legacy.records || {}, new Set(legacy.wrong || []));
+      state.bookmarkedMeta = normalizeBookmarkMeta({}, new Set(legacy.bookmarked || []));
+      state.bookmarked = bookmarkedSetFromMeta(state.bookmarkedMeta);
       state.memoryRecords = {};
       state.memoryQueue = [];
       state.memoryScopeKey = "";
+      state.wrongBookFilter = "all";
+      syncCurrentWrongSetFromHistory();
     } catch {
       state.records = {};
       state.wrong = new Set();
+      state.wrongHistory = {};
       state.bookmarked = new Set();
+      state.bookmarkedMeta = {};
       state.memoryRecords = {};
       state.memoryQueue = [];
       state.memoryScopeKey = "";
+      state.wrongBookFilter = "all";
     }
   }
 
-  function saveState() {
+  function saveState(options = {}) {
+    state.session = captureSession();
+    syncCurrentWrongSetFromHistory();
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
         records: state.records,
         wrong: [...state.wrong],
+        wrongHistory: state.wrongHistory,
+        wrongBookFilter: state.wrongBookFilter,
         bookmarked: [...state.bookmarked],
+        bookmarkedMeta: state.bookmarkedMeta,
         memoryRecords: state.memoryRecords,
         memoryQueue: state.memoryQueue,
         memoryScopeKey: state.memoryScopeKey,
+        session: state.session,
       }),
     );
+    if (!options.skipSyncMark) {
+      markSyncDirty();
+    }
   }
 
   async function loadData() {
@@ -17701,6 +18405,195 @@ window.KNOWLEDGE_MAP = {
       knowledgeMap = await response.json();
     }
     return { questionBank, knowledgeMap };
+  }
+
+  function configReady() {
+    return Boolean(window.MaogaiSyncClient && window.MAOGAI_SYNC_CONFIG?.databaseUrl);
+  }
+
+  function renderSyncPanel() {
+    if (!els.syncStatus || !els.syncMeta || !els.syncGroupInput || !els.syncDeviceInput) return;
+    els.syncGroupInput.value = state.sync.groupCode || "";
+    els.syncDeviceInput.value = state.sync.deviceName || "";
+    const syncedAt = state.sync.lastSyncedAt ? new Date(state.sync.lastSyncedAt).toLocaleString("zh-CN") : "未同步";
+    const revision = state.sync.revision ? `r${state.sync.revision}` : "r0";
+    const device = state.sync.deviceName || "未命名设备";
+    els.syncStatus.textContent = state.sync.lastError
+      ? `${state.sync.status}：${state.sync.lastError}`
+      : state.sync.status;
+    els.syncMeta.textContent = state.sync.groupCode
+      ? `同步码 ${state.sync.groupCode} · ${device} · ${revision} · 最近同步 ${syncedAt}`
+      : `本地记录仅保存在当前设备。创建同步码后，手机和电脑就能共享同一份学习档案。`;
+    if (els.syncCreateButton) els.syncCreateButton.disabled = state.sync.busy;
+    if (els.syncJoinButton) els.syncJoinButton.disabled = state.sync.busy;
+    if (els.syncNowButton) els.syncNowButton.disabled = state.sync.busy || !state.sync.groupCode;
+    if (els.syncGroupInput) els.syncGroupInput.disabled = state.sync.busy;
+    if (els.syncDeviceInput) els.syncDeviceInput.disabled = state.sync.busy;
+  }
+
+  function prepareSnapshotForCloud(snapshot) {
+    const next = deepClone(snapshot);
+    next.meta = {
+      schemaVersion: 1,
+      updatedAt: nowIso(),
+      deviceId: state.sync.deviceId,
+      deviceName: state.sync.deviceName,
+    };
+    return next;
+  }
+
+  function cloudPayloadFromRow(row) {
+    if (!row?.state) {
+      return {
+        schemaVersion: 1,
+        session: {},
+        records: {},
+        wrongHistory: {},
+        bookmarked: {},
+        memoryRecords: {},
+      };
+    }
+    return typeof row.state === "string" ? JSON.parse(row.state) : row.state;
+  }
+
+  async function createCloudGroup() {
+    ensureSyncIdentity();
+    const inputCode = (els.syncGroupInput?.value || "").trim().toUpperCase();
+    const groupCode = inputCode || MaogaiSyncClient.randomCode(8);
+    const snapshot = prepareSnapshotForCloud(localSyncSnapshot());
+    state.sync.groupCode = groupCode;
+    touchSyncStatus("正在创建云档案…");
+
+    const existing = await MaogaiSyncClient.fetchGroup(groupCode);
+    if (existing) {
+      const remote = cloudPayloadFromRow(existing);
+      const merged = mergeSyncSnapshots(localSyncSnapshot(), remote);
+      const current = await MaogaiSyncClient.updateGroup(
+        groupCode,
+        Number(existing.revision || 0),
+        prepareSnapshotForCloud(merged),
+        state.sync,
+      );
+      if (!current) {
+        throw new Error("同步档案刚好被其他设备更新了，请再同步一次");
+      }
+      state.sync.revision = Number(current.revision || 0);
+      state.sync.lastSyncedAt = nowIso();
+      state.sync.dirty = false;
+      saveSyncState();
+      applyMergedSnapshot(cloudPayloadFromRow(current));
+      saveState({ skipSyncMark: true });
+      touchSyncStatus("云档案已连接");
+      render();
+      return;
+    }
+
+    const created = await MaogaiSyncClient.createGroup(groupCode, snapshot, state.sync);
+    if (!created) {
+      throw new Error("云档案创建失败");
+    }
+
+    state.sync.revision = Number(created.revision || 0);
+    state.sync.lastSyncedAt = nowIso();
+    state.sync.dirty = false;
+    saveSyncState();
+    applyMergedSnapshot(cloudPayloadFromRow(created));
+    saveState({ skipSyncMark: true });
+    touchSyncStatus("云档案已创建");
+    render();
+  }
+
+  async function joinCloudGroup() {
+    ensureSyncIdentity();
+    const groupCode = (els.syncGroupInput?.value || "").trim().toUpperCase();
+    if (!groupCode) {
+      throw new Error("请输入同步码");
+    }
+    state.sync.groupCode = groupCode;
+    touchSyncStatus("正在加入云档案…");
+    const row = await MaogaiSyncClient.fetchGroup(groupCode);
+    if (!row) {
+      throw new Error("没找到这个同步码");
+    }
+    const remote = cloudPayloadFromRow(row);
+    const merged = mergeSyncSnapshots(localSyncSnapshot(), remote);
+    const current = await MaogaiSyncClient.updateGroup(groupCode, Number(row.revision || 0), prepareSnapshotForCloud(merged), state.sync);
+    if (!current) {
+      throw new Error("加入成功，但云端状态刚好被其他设备更新了，请再同步一次");
+    }
+    state.sync.revision = Number(current.revision || 0);
+    state.sync.lastSyncedAt = nowIso();
+    state.sync.dirty = false;
+    saveSyncState();
+    applyMergedSnapshot(cloudPayloadFromRow(current));
+    saveState({ skipSyncMark: true });
+    touchSyncStatus("已加入云档案");
+    render();
+  }
+
+  async function syncNow(options = {}) {
+    if (!configReady()) return;
+    if (!state.sync.groupCode) {
+      if (!options.silent) touchSyncStatus("还没有同步码");
+      return;
+    }
+    if (state.sync.busy) return;
+    ensureSyncIdentity();
+    state.sync.busy = true;
+    if (!options.silent) touchSyncStatus("正在同步…");
+    renderSyncPanel();
+
+    try {
+      let row = await MaogaiSyncClient.fetchGroup(state.sync.groupCode);
+      const localSnapshot = localSyncSnapshot();
+      if (!row) {
+        row = await MaogaiSyncClient.createGroup(state.sync.groupCode, prepareSnapshotForCloud(localSnapshot), state.sync);
+        if (!row) {
+          throw new Error("创建云档案失败");
+        }
+        applyMergedSnapshot(cloudPayloadFromRow(row));
+        saveState({ skipSyncMark: true });
+      } else {
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          const remote = cloudPayloadFromRow(row);
+          const merged = mergeSyncSnapshots(localSnapshot, remote);
+          const updated = await MaogaiSyncClient.updateGroup(
+            state.sync.groupCode,
+            Number(row.revision || 0),
+            prepareSnapshotForCloud(merged),
+            state.sync,
+          );
+          if (updated) {
+            row = updated;
+            applyMergedSnapshot(merged);
+            saveState({ skipSyncMark: true });
+            break;
+          }
+          row = await MaogaiSyncClient.fetchGroup(state.sync.groupCode);
+          if (!row) {
+            throw new Error("云档案在同步途中消失了");
+          }
+        }
+      }
+
+      state.sync.revision = Number(row.revision || 0);
+      state.sync.lastSyncedAt = nowIso();
+      state.sync.dirty = false;
+      state.sync.lastError = "";
+      state.sync.status = "同步完成";
+      saveSyncState();
+      renderSyncPanel();
+      if (!options.silent) render();
+    } catch (error) {
+      state.sync.lastError = error?.message || "同步失败";
+      state.sync.status = "同步失败";
+      saveSyncState();
+      renderSyncPanel();
+      if (!options.silent) console.warn("Sync failed", error);
+    } finally {
+      state.sync.busy = false;
+      renderSyncPanel();
+    }
   }
 
   function baseScopedQuestions() {
@@ -17774,6 +18667,10 @@ window.KNOWLEDGE_MAP = {
     let pool = baseScopedQuestions();
     if (state.mode === "wrong") {
       pool = pool.filter((question) => state.wrong.has(question.id));
+    }
+    if (state.mode === "wrongbook") {
+      pool = pool.filter((question) => wrongBookMatchesFilter(wrongHistoryRecordFor(question.id), state.wrongBookFilter));
+      pool = sortWrongBookQuestions(pool);
     }
     if (state.mode === "bookmarked") {
       pool = pool.filter((question) => state.bookmarked.has(question.id));
@@ -17935,6 +18832,7 @@ window.KNOWLEDGE_MAP = {
     if (!record.previewed) {
       record.previewed = true;
       record.lastSeenAt = new Date().toISOString();
+      record.updatedAt = record.lastSeenAt;
       saveState();
     }
   }
@@ -17946,6 +18844,7 @@ window.KNOWLEDGE_MAP = {
     const record = memoryRecordFor(question.id);
     record.previewed = true;
     record.lastSeenAt = new Date().toISOString();
+    record.updatedAt = record.lastSeenAt;
     entry.phase = "recall";
     state.memoryPhase = "recall";
     state.selected = new Set();
@@ -17985,13 +18884,14 @@ window.KNOWLEDGE_MAP = {
       state.fillValue = els.fillInput.value;
     }
     const correct = answerIsCorrect(question);
-    const record = memoryRecordFor(question.id);
     state.submitted = true;
     state.lastCorrect = correct;
+    const record = memoryRecordFor(question.id);
     record.attempts += 1;
     record.lastCorrect = correct;
     record.lastAnswer = userAnswer(question);
     record.lastSeenAt = new Date().toISOString();
+    record.updatedAt = record.lastSeenAt;
     if (correct) {
       record.correct += 1;
       record.passed = true;
@@ -18001,6 +18901,7 @@ window.KNOWLEDGE_MAP = {
       record.pendingRepeat = true;
       scheduleMemoryRepeat(question.id);
     }
+    updateWrongHistory(question, correct, userAnswer(question), { trackCurrentRecord: false });
     saveState();
     setFeedbackState(correct ? "correct" : "wrong");
     render();
@@ -18030,15 +18931,16 @@ window.KNOWLEDGE_MAP = {
       state.fillValue = els.fillInput.value;
     }
     const correct = answerIsCorrect(question);
+    const now = new Date().toISOString();
     state.submitted = true;
     state.lastCorrect = correct;
+    updateWrongHistory(question, correct, userAnswer(question), { trackCurrentRecord: true });
     state.records[question.id] = {
       correct,
       answer: userAnswer(question),
-      at: new Date().toISOString(),
+      at: now,
+      updatedAt: now,
     };
-    if (correct) state.wrong.delete(question.id);
-    else state.wrong.add(question.id);
     saveState();
     setFeedbackState(correct ? "correct" : "wrong");
     render();
@@ -18067,8 +18969,14 @@ window.KNOWLEDGE_MAP = {
   function toggleBookmark() {
     const question = currentQuestion();
     if (!question) return;
-    if (state.bookmarked.has(question.id)) state.bookmarked.delete(question.id);
-    else state.bookmarked.add(question.id);
+    const now = new Date().toISOString();
+    if (state.bookmarked.has(question.id)) {
+      state.bookmarked.delete(question.id);
+      state.bookmarkedMeta[question.id] = { value: false, updatedAt: now };
+    } else {
+      state.bookmarked.add(question.id);
+      state.bookmarkedMeta[question.id] = { value: true, updatedAt: now };
+    }
     saveState();
     render();
   }
@@ -18145,9 +19053,12 @@ window.KNOWLEDGE_MAP = {
     }
 
     const activeTopic = state.topicQuestionIds && state.activeTopicId ? findTopic(state.activeTopicId) : null;
+    const modeText = state.mode === "wrongbook"
+      ? `错题本 · ${wrongBookLevelLabel(state.wrongBookFilter || "all")}`
+      : modeLabel();
     els.currentScope.textContent = activeTopic
       ? `考点练习 · ${activeTopic.topic.title} · ${pool.length}题`
-      : `${state.chapter} · ${TYPE_LABELS[state.type]} · ${modeLabel()}`;
+      : `${state.chapter} · ${TYPE_LABELS[state.type]} · ${modeText}`;
     els.questionTitle.textContent = `${question.chapter} 第 ${question.number} 题`;
     els.questionType.textContent = TYPE_LABELS[question.type] || question.type;
     els.questionStem.textContent = question.stem;
@@ -18234,6 +19145,7 @@ window.KNOWLEDGE_MAP = {
   function modeLabel() {
     if (state.mode === "memory") return "记忆模式";
     if (state.mode === "wrong") return "错题复习";
+    if (state.mode === "wrongbook") return "错题本";
     if (state.mode === "bookmarked") return "收藏题";
     return "章节练习";
   }
@@ -18254,6 +19166,22 @@ window.KNOWLEDGE_MAP = {
       els.doneCount.textContent = String(previewed);
       els.accuracy.textContent = tested ? `${Math.round((mastered / tested) * 100)}%` : "0%";
       els.wrongCount.textContent = String(pendingRepeat);
+      return;
+    }
+
+    if (state.mode === "wrongbook") {
+      const pool = currentPool();
+      const stats = wrongBookPoolStats(baseScopedQuestions().filter((question) => wrongHistoryRecordFor(question.id)));
+      const mastered = stats.mastered;
+      const currentWrong = stats.unmastered;
+      els.totalLabel.textContent = "历史错题";
+      els.doneLabel.textContent = "已会";
+      els.accuracyLabel.textContent = "掌握率";
+      els.wrongLabel.textContent = "未掌握";
+      els.totalCount.textContent = String(stats.all);
+      els.doneCount.textContent = String(mastered);
+      els.accuracy.textContent = stats.all ? `${Math.round((mastered / stats.all) * 100)}%` : "0%";
+      els.wrongCount.textContent = String(currentWrong);
       return;
     }
 
@@ -18283,6 +19211,11 @@ window.KNOWLEDGE_MAP = {
           else if (record.pendingRepeat && entry?.repeated) classes.push("memory-repeat");
           else if (entry?.phase === "recall") classes.push("memory-recall");
           else if (record.previewed) classes.push("memory-preview");
+        } else if (state.mode === "wrongbook") {
+          const record = wrongHistoryRecordFor(question.id);
+          const level = wrongBookLevel(record);
+          const levelClass = wrongBookLevelClass(level);
+          if (levelClass) classes.push(levelClass);
         } else {
           const record = state.records[question.id];
           if (record) classes.push("done");
@@ -18298,6 +19231,37 @@ window.KNOWLEDGE_MAP = {
     document.querySelectorAll(".mode").forEach((button) => {
       button.classList.toggle("active", button.dataset.mode === state.mode);
     });
+  }
+
+  function renderWrongBookSection() {
+    if (!els.wrongBookSection || !els.wrongBookFilters || !els.wrongBookSummary || !els.wrongBookNote) return;
+    const isWrongBook = state.mode === "wrongbook";
+    els.wrongBookSection.classList.toggle("hidden", !isWrongBook);
+    if (!isWrongBook) return;
+
+    const scopedHistory = baseScopedQuestions().filter((question) => wrongHistoryRecordFor(question.id));
+    const stats = wrongBookPoolStats(scopedHistory);
+    const activeFilter = state.wrongBookFilter || "all";
+    const filters = [
+      { key: "all", label: "全部", count: stats.all, className: "" },
+      { key: "unmastered", label: "仍未掌握", count: stats.unmastered, className: "wrongbook-unmastered" },
+      { key: "thrice", label: "三错及以上", count: stats.thrice, className: "wrongbook-thrice" },
+      { key: "twice", label: "二错才会", count: stats.twice, className: "wrongbook-twice" },
+      { key: "once", label: "一错即会", count: stats.once, className: "wrongbook-once" },
+    ];
+
+    els.wrongBookSummary.textContent = stats.all
+      ? `当前筛选范围内共有 ${stats.all} 道历史错题，其中 ${stats.unmastered} 道仍未掌握。`
+      : "当前筛选范围内还没有历史错题。第一次做错会自动收藏，方便你统一回看。";
+    els.wrongBookNote.textContent = "按错误次数分层展示，颜色越深表示越难记。";
+    els.wrongBookFilters.innerHTML = filters
+      .map(
+        (filter) => `<button class="wrongbook-filter ${filter.className} ${filter.key === activeFilter ? "active" : ""}" data-wrongbook-filter="${filter.key}" type="button">
+          <span>${filter.label}</span>
+          <small>${filter.count}</small>
+        </button>`,
+      )
+      .join("");
   }
 
   function getKnowledgeChapter(chapterName) {
@@ -18419,6 +19383,8 @@ window.KNOWLEDGE_MAP = {
     renderStats();
     renderAnswerSheet();
     renderModes();
+    renderWrongBookSection();
+    renderSyncPanel();
   }
 
   function bindEvents() {
@@ -18484,18 +19450,80 @@ window.KNOWLEDGE_MAP = {
     document.querySelectorAll(".mode").forEach((button) => {
       button.addEventListener("click", () => setFilters({ mode: button.dataset.mode }));
     });
+    if (els.wrongBookFilters) {
+      els.wrongBookFilters.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-wrongbook-filter]");
+        if (!button) return;
+        state.wrongBookFilter = button.dataset.wrongbookFilter || "all";
+        state.index = 0;
+        resetInteraction();
+        render();
+        saveState();
+      });
+    }
+    if (els.syncGroupInput) {
+      els.syncGroupInput.addEventListener("input", () => {
+        state.sync.groupCode = els.syncGroupInput.value.trim().toUpperCase();
+        saveSyncState();
+        renderSyncPanel();
+      });
+    }
+    if (els.syncDeviceInput) {
+      els.syncDeviceInput.addEventListener("input", () => {
+        state.sync.deviceName = els.syncDeviceInput.value.trim() || createDefaultDeviceName();
+        saveSyncState();
+        renderSyncPanel();
+      });
+    }
+    document.addEventListener("click", async (event) => {
+      const button = event.target.closest("#syncCreateButton, #syncJoinButton, #syncNowButton");
+      if (!button) return;
+      event.preventDefault();
+      try {
+        if (button.id === "syncCreateButton") {
+          await createCloudGroup();
+        } else if (button.id === "syncJoinButton") {
+          await joinCloudGroup();
+        } else if (button.id === "syncNowButton") {
+          await syncNow();
+        }
+      } catch (error) {
+        if (button.id === "syncCreateButton") {
+          touchSyncStatus("创建失败", error?.message || "请检查网络后重试");
+        } else if (button.id === "syncJoinButton") {
+          touchSyncStatus("加入失败", error?.message || "请检查同步码后重试");
+        } else {
+          touchSyncStatus("同步失败", error?.message || "请检查网络后重试");
+        }
+      }
+    });
     els.resetButton.addEventListener("click", () => {
-      if (!confirm("确定清空本浏览器中的答题记录、错题、收藏和记忆进度吗？")) return;
+      if (!confirm("确定清空本浏览器中的答题记录、历史错题、收藏和记忆进度吗？")) return;
       state.records = {};
       state.wrong = new Set();
+      state.wrongHistory = {};
+      state.wrongBookFilter = "all";
       state.bookmarked = new Set();
+      state.bookmarkedMeta = {};
       state.memoryRecords = {};
       state.memoryQueue = [];
       state.memoryScopeKey = "";
+      state.sync.dirty = true;
       saveState();
       if (state.mode === "memory") rebuildMemoryQueue(false);
       resetInteraction();
       render();
+    });
+    window.addEventListener("online", () => {
+      if (state.sync.groupCode) {
+        touchSyncStatus("网络恢复，准备同步…");
+        scheduleSyncSoon();
+      }
+    });
+    window.addEventListener("visibilitychange", () => {
+      if (!document.hidden && state.sync.groupCode && state.sync.dirty) {
+        scheduleSyncSoon();
+      }
     });
   }
 
@@ -18503,6 +19531,9 @@ window.KNOWLEDGE_MAP = {
     setupInstallPrompt();
     registerServiceWorker();
     loadSavedState();
+    loadSyncState();
+    ensureSyncIdentity();
+    saveSyncState();
     bindEvents();
     try {
       const loaded = await loadData();
@@ -18515,6 +19546,9 @@ window.KNOWLEDGE_MAP = {
         state.view = "knowledge";
       }
       render();
+      if (state.sync.groupCode && configReady()) {
+        scheduleSyncSoon();
+      }
     } catch (error) {
       els.questionTitle.textContent = "题库加载失败";
       els.questionStem.textContent = "请确认 questions.json 或 questions-data.js 与网页文件在同一目录。";

@@ -20,7 +20,7 @@
           <div class="brand-mark">毛</div>
           <div>
             <h1>毛概题库</h1>
-            <p>章节自测与错题复习</p>
+            <p>章节自测、错题本与收藏题</p>
           </div>
         </div>
 
@@ -130,8 +130,18 @@
             <button class="mode active" data-mode="all" type="button">章节练习</button>
             <button class="mode" data-mode="memory" type="button">记忆模式</button>
             <button class="mode" data-mode="wrong" type="button">错题复习</button>
+            <button class="mode" data-mode="wrongbook" type="button">错题本</button>
             <button class="mode" data-mode="bookmarked" type="button">收藏题</button>
           </div>
+        </section>
+
+        <section class="review-section wrongbook-section hidden" id="wrongBookSection">
+          <div class="section-head">
+            <h3>错题本</h3>
+          </div>
+          <p class="wrongbook-summary" id="wrongBookSummary"></p>
+          <div class="wrongbook-filters" id="wrongBookFilters"></div>
+          <p class="wrongbook-note" id="wrongBookNote"></p>
         </section>
 
         <section class="review-section sync-section">
@@ -171,6 +181,6 @@
     <script src="./knowledge-map-data.js"></script>
     <script src="./sync-config.js"></script>
     <script src="./sync-client.js"></script>
-    <script src="./app.js?v=20260522-1"></script>
+    <script src="./app.js?v=20260523-1"></script>
   </body>
 </html>

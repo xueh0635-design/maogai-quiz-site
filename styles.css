@@ -766,11 +766,123 @@ button,
   gap: 8px;
 }
 
+.sync-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.sync-field {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.sync-field input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfe;
+  color: var(--ink);
+  min-width: 0;
+}
+
+.sync-field input:focus {
+  outline: 2px solid rgba(31, 138, 95, 0.18);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
+.sync-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.sync-status {
+  margin: 0;
+  color: var(--accent-dark);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.sync-meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .mode {
   padding: 10px 12px;
   color: var(--muted);
   background: #f0f3f6;
   text-align: left;
+}
+
+.wrongbook-section {
+  display: grid;
+  gap: 12px;
+}
+
+.wrongbook-summary,
+.wrongbook-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.wrongbook-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.wrongbook-filter {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafc;
+  color: var(--ink);
+  text-align: left;
+}
+
+.wrongbook-filter span,
+.wrongbook-filter small {
+  display: block;
+}
+
+.wrongbook-filter small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.wrongbook-filter.active {
+  border-color: var(--accent);
+  background: #edf8f2;
+  color: var(--accent-dark);
+  font-weight: 800;
+}
+
+.wrongbook-filter.wrongbook-unmastered {
+  background: #fff0ed;
+}
+
+.wrongbook-filter.wrongbook-once {
+  background: #fff4e1;
+}
+
+.wrongbook-filter.wrongbook-twice {
+  background: #ffe5d3;
+}
+
+.wrongbook-filter.wrongbook-thrice {
+  background: #ffd4c7;
 }
 
 .answer-sheet {
@@ -829,6 +941,30 @@ button,
   color: #fff;
   background: var(--amber);
   border-color: var(--amber);
+}
+
+.sheet-item.wrongbook-once {
+  color: #7a4b0a;
+  background: #fff4e1;
+  border-color: #f0d39a;
+}
+
+.sheet-item.wrongbook-twice {
+  color: #8b3f18;
+  background: #ffe5d3;
+  border-color: #efb07a;
+}
+
+.sheet-item.wrongbook-thrice {
+  color: #fff;
+  background: #c85a37;
+  border-color: #c85a37;
+}
+
+.sheet-item.wrongbook-unmastered {
+  color: #fff;
+  background: #b7372d;
+  border-color: #b7372d;
 }
 
 .hidden {
