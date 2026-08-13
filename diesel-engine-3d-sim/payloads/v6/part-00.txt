@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>四冲程柴油机高精度 3D 交互仿真</title>
+<style>
+:root{
+  --bg:#071019;--panel:rgba(12,25,39,.90);--panel2:rgba(16,34,54,.92);--line:rgba(145,183,219,.18);
+  --text:#eff8ff;--muted:#9eb5ca;--cyan:#58d4ff;--blue:#67a7ff;--orange:#ff8c4b;--green:#5be0a7;--gray:#a9b2ba;
+}
+*{box-sizing:border-box} html,body{width:100%;height:100%;margin:0;overflow:hidden}
+body{font-family:Inter,"PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;color:var(--text);background:#071019}
+#app{position:relative;width:100%;height:100%}
+#viewport{position:absolute;inset:0;background:radial-gradient(circle at 55% 35%,#142b43 0%,#091622 45%,#050b11 100%)}
+#canvas3d{display:block;width:100%;height:100%}
+.panel{background:linear-gradient(180deg,rgba(18,38,60,.94),rgba(9,20,32,.94));border:1px solid var(--line);box-shadow:0 18px 44px rgba(0,0,0,.28);backdrop-filter:blur(12px)}
+#topbar{position:absolute;left:16px;right:16px;top:14px;height:62px;border-radius:18px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:4}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}.logo{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,#2f8df4,#45d0ff);box-shadow:0 0 24px rgba(74,170,255,.28);display:grid;place-items:center;font-weight:900;color:white}.brand h1{font-size:16px;margin:0;white-space:nowrap}.brand p{font-size:11px;color:#8fa9c0;margin:3px 0 0;white-space:nowrap}.topActions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+button,.btn{appearance:none;border:1px solid rgba(138,177,214,.16);background:#132c45;color:#edf7ff;border-radius:11px;padding:9px 11px;font:700 12px inherit;cursor:pointer;transition:.18s transform,.18s background,.18s border}.btn:hover,button:hover{transform:translateY(-1px);background:#1d4368;border-color:rgba(138,177,214,.33)}button.primary{background:#2b7eea}button.active{outline:2px solid rgba(94,190,255,.8);background:#184b76}
+#leftPanel{position:absolute;left:16px;top:88px;width:296px;bottom:16px;border-radius:18px;padding:14px;z-index:4;overflow:auto}
+#rightPanel{position:absolute;right:16px;top:88px;width:320px;bottom:16px;border-radius:18px;padding:14px;z-index:4;overflow:auto}
+#bottomDock{position:absolute;left:328px;right:352px;bottom:16px;border-radius:18px;min-height:144px;padding:12px 14px;z-index:4;display:grid;grid-template-columns:1.1fr .9fr;gap:14px}
+.sectionTitle{font-size:12px;letter-spacing:.10em;color:#87bde7;text-transform:uppercase;font-weight:900;margin:4px 0 10px}.divider{height:1px;background:rgba(135,171,205,.12);margin:13px 0}.muted{color:var(--muted)}
+.phase{font-size:26px;font-weight:950;margin-bottom:1px}.phaseSub{font-size:11px;color:#8fc8ff;letter-spacing:.10em}.desc{font-size:12px;line-height:1.62;color:#bacbdd;margin-top:8px}.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}.metric{padding:9px 10px;background:#091828;border:1px solid rgba(130,170,210,.12);border-radius:11px}.metric small{display:block;color:#839bb1;font-size:10px;margin-bottom:4px}.metric b{font-size:13px}
+.row{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.sliderRow{display:grid;grid-template-columns:56px 1fr 50px;gap:8px;align-items:center;margin:10px 0;font-size:11px;color:#a6bfd4}input[type=range]{width:100%}
+.presetGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.presetGrid button{padding:8px 6px}
+.toggleRow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin:8px 0;font-size:12px;color:#c5d5e3}.switch{width:40px;height:22px;border-radius:999px;background:#10253a;border:1px solid rgba(125,160,194,.28);padding:2px;cursor:pointer}.switch i{display:block;width:16px;height:16px;border-radius:50%;background:#839bad;transition:.2s transform,.2s background}.switch.on{background:#174b77}.switch.on i{transform:translateX(18px);background:#69d4ff}
+.systems{display:grid;gap:6px}.sys{padding:9px 10px;border-radius:10px;background:#0a1929;border:1px solid rgba(126,162,200,.11);font-size:11px;color:#bdd0e1;cursor:pointer}.sys strong{display:block;color:#eff7ff;margin-bottom:2px}.sys.active{border-color:rgba(93,205,255,.55);background:#10314c}
+.readouts{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.readout{background:#091828;border:1px solid rgba(130,170,210,.12);border-radius:12px;padding:10px}.readout small{display:block;font-size:10px;color:#879fb5}.readout b{font-size:20px}.readout span{font-size:10px;color:#91a8bd}
+.partList{display:grid;gap:5px}.partItem{display:flex;align-items:center;gap:7px;font-size:11px;color:#b9ccdc;padding:6px 7px;border-radius:8px}.partItem i{width:8px;height:8px;border-radius:2px;display:inline-block}
+#tooltip{position:absolute;z-index:8;pointer-events:none;display:none;width:310px;padding:13px;border-radius:14px;background:rgba(7,18,29,.96);border:1px solid rgba(112,191,245,.35);box-shadow:0 16px 46px rgba(0,0,0,.42)}#tooltip h3{font-size:14px;margin:0 0 3px}#tooltip .en{font-size:10px;color:#78bfff;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}#tooltip dl{display:grid;grid-template-columns:68px 1fr;gap:6px 8px;margin:0;font-size:10px;line-height:1.45}#tooltip dt{color:#7e9ab3}#tooltip dd{margin:0;color:#d5e5f3}
+#crosshair{position:absolute;left:50%;top:50%;width:10px;height:10px;margin:-5px;opacity:.24;z-index:2;pointer-events:none}#crosshair:before,#crosshair:after{content:"";position:absolute;background:white}#crosshair:before{width:10px;height:1px;top:4px}#crosshair:after{height:10px;width:1px;left:4px}
+#guide{position:absolute;left:50%;top:88px;transform:translateX(-50%);z-index:3;padding:8px 12px;border-radius:999px;background:rgba(6,15,24,.72);border:1px solid rgba(135,171,205,.16);color:#98b2c9;font-size:11px;pointer-events:none}
+.chartWrap{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.chartBox{background:#081623;border:1px solid rgba(126,162,200,.12);border-radius:12px;padding:8px}.chartTitle{font-size:10px;color:#afc5d8;margin:0 0 5px}.chart{width:100%;height:94px;display:block}.legendFlow{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}.legendFlow span{font-size:9px;color:#9db5ca;text-align:center}.legendFlow i{display:block;height:4px;border-radius:999px;margin-bottom:3px}
+.statusTimeline{display:grid;grid-template-columns:repeat(4,1fr);height:8px;border-radius:999px;overflow:hidden;margin-top:9px;border:1px solid rgba(126,162,200,.18)}.statusTimeline i{opacity:.35}.statusTimeline i.on{opacity:1}
+.sys input{accent-color:#62cfff;vertical-align:middle;margin-right:3px}.qualityBadge{font-size:9px;color:#71d9ff;border:1px solid rgba(94,205,255,.30);background:rgba(30,90,130,.20);padding:4px 7px;border-radius:999px}#loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:19;background:radial-gradient(circle at 50% 42%,rgba(25,62,91,.96),rgba(5,12,18,.98));color:white;text-align:center;padding:30px}#loading .spinner{width:44px;height:44px;border:3px solid rgba(120,200,255,.18);border-top-color:#62d2ff;border-radius:50%;margin:0 auto 14px;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}#loading small{display:block;color:#8fa9c0;margin-top:8px}#fallback{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:20;background:#071019;color:white;padding:30px;text-align:center}
+@media(max-width:1180px){#leftPanel{width:250px}#rightPanel{width:280px}#bottomDock{left:282px;right:312px}.brand p{display:none}}
+@media(max-width:900px){html,body{overflow:auto}#app{min-height:100vh;height:auto;background:#071019;padding-bottom:10px}#viewport{position:relative;height:66vh;min-height:520px}#topbar,#leftPanel,#rightPanel,#bottomDock{position:relative;left:auto;right:auto;top:auto;bottom:auto;width:auto;margin:10px 10px 0}.brand h1{font-size:13px}#topbar{height:auto;min-height:58px}.mainSpacer{display:none}.chartWrap{grid-template-columns:1fr}.presetGrid{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="viewport"><canvas id="canvas3d"></canvas></div>
+  <div id="crosshair"></div>
+  <div id="guide">拖拽旋转 · 滚轮缩放 · 右键平移 · 悬停信息 · 双击聚焦 · Space 暂停 · C 剖视 · E 爆炸</div>
+
+  <div id="topbar" class="panel">
+    <div class="brand"><div class="logo">D4</div><div><h1>直列四缸柴油机 · 高精度 3D 交互仿真</h1><p>Inline-4 · PBR · Cutaway · Exploded · 1-3-4-2 · Multi-CDN Fallback</p></div></div>
+    <div class="topActions"><span class="qualityBadge">INLINE-4 · 1-3-4-2 · ADAPTIVE 60FPS</span>
+      <button id="play" class="primary">暂停</button>
+      <button id="step">步进 10°</button>
+      <button id="reset">复位</button>
+      <button id="explode">爆炸视图</button>
+      <button id="cutaway" class="active">剖视模式</button><button id="tour">自动导览</button>
+    </div>
+  </div>
+
+  <aside id="leftPanel" class="panel">
+    <div class="sectionTitle">循环状态</div>
+    <div id="phase" class="phase">吸气冲程</div><div id="phaseSub" class="phaseSub">INTAKE · 0–180°</div>
+    <div id="phaseDesc" class="desc"></div>
+    <div class="metrics">
+      <div class="metric"><small>曲轴转角</small><b id="angle">0° / 720°</b></div>
+      <div class="metric"><small>活塞</small><b id="pistonState">下行</b></div>
+      <div class="metric"><small>进气门</small><b id="intakeState">打开</b></div>
+      <div class="metric"><small>排气门</small><b id="exhaustState">关闭</b></div>
+    </div>
+    <div class="statusTimeline"><i style="background:#4ecbff" class="on"></i><i style="background:#8e8cff"></i><i style="background:#ff8b48"></i><i style="background:#9ba3aa"></i></div>
+
+    <div class="divider"></div><div class="sectionTitle">工况控制</div>
+    <div class="sliderRow"><span>转速</span><input id="rpm" type="range" min="350" max="2600" value="900" step="10"><b id="rpmTxt">900</b></div>
+    <div class="sliderRow"><span>负荷</span><input id="load" type="range" min="10" max="100" value="55" step="1"><b id="loadTxt">55%</b></div><div class="sliderRow"><span>仿真速度</span><input id="timeScale" type="range" min="0.2" max="2" value="1" step="0.05"><b id="timeScaleTxt">1.00×</b></div><div class="sliderRow"><span>曲轴角</span><input id="crankScrub" type="range" min="0" max="720" value="0" step="1"><b id="crankScrubTxt">0°</b></div>
+    <div class="sliderRow"><span>爆炸度</span><input id="explodeAmount" type="range" min="0" max="100" value="0" step="1"><b id="explodeTxt">0%</b></div><div class="sliderRow"><span>焦点缸</span><input id="focusCylinder" type="range" min="1" max="4" value="1" step="1"><b id="focusTxt">1缸</b></div>
+
+    <div class="divider"></div><div class="sectionTitle">视角预设</div>
+    <div class="presetGrid"><button data-view="iso">自由</button><button data-view="front">正视</button><button data-view="side">侧视</button><button data-view="top">俯视</button></div>
+
+    <div class="divider"></div><div class="sectionTitle">可视化开关</div>
+    <div class="toggleRow"><span>润滑油流线</span><div class="switch on" id="oilToggle"><i></i></div></div>
+    <div class="toggleRow"><span>冷却液流线</span><div class="switch on" id="coolantToggle"><i></i></div></div>
+    <div class="toggleRow"><span>进排气流线</span><div class="switch on" id="gasToggle"><i></i></div></div>
+    <div class="toggleRow"><span>部件标签</span><div class="switch on" id="labelToggle"><i></i></div></div><div class="sliderRow"><span>壳体透明</span><input id="shellOpacity" type="range" min="10" max="75" value="23" step="1"><b id="shellOpacityTxt">23%</b></div>
+
+    <div class="divider"></div><div class="sectionTitle">系统聚焦</div>
+    <div id="systemChecks" style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px;margin-bottom:8px"><label class="sys"><input type="checkbox" data-vis="motion" checked> 运动件</label><label class="sys"><input type="checkbox" data-vis="valve" checked> 配气</label><label class="sys"><input type="checkbox" data-vis="fuel" checked> 燃油</label><label class="sys"><input type="checkbox" data-vis="oil" ch
