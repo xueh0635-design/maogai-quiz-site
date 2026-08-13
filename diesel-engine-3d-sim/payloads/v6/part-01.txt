@@ -1,0 +1,108 @@
+ecked> 润滑</label><label class="sys"><input type="checkbox" data-vis="cooling" checked> 冷却</label><label class="sys"><input type="checkbox" data-vis="gas" checked> 进排气</label></div><div class="systems">
+      <div class="sys active" data-system="all"><strong>整机总览</strong>显示全部系统</div>
+      <div class="sys" data-system="motion"><strong>曲柄连杆机构</strong>活塞、连杆、曲轴、飞轮</div>
+      <div class="sys" data-system="valve"><strong>配气机构</strong>凸轮、挺柱、推杆、摇臂、气门</div>
+      <div class="sys" data-system="fuel"><strong>燃油系统</strong>油泵、滤清器、高压油管、喷油器</div>
+      <div class="sys" data-system="oil"><strong>润滑系统</strong>机油泵、滤清器、主油道、冷却器</div>
+      <div class="sys" data-system="cooling"><strong>冷却系统</strong>水泵、节温器、水套、散热器</div>
+      <div class="sys" data-system="gas"><strong>进排气/增压</strong>歧管、涡轮、中冷器</div>
+    </div>
+  </aside>
+
+  <aside id="rightPanel" class="panel">
+    <div class="sectionTitle">实时模拟参数</div>
+    <div class="readouts">
+      <div class="readout"><small>发动机转速</small><b id="rRpm">900</b><span> rpm</span></div>
+      <div class="readout"><small>负荷</small><b id="rLoad">55</b><span> %</span></div>
+      <div class="readout"><small>缸内压力</small><b id="rP">0.96</b><span> bar</span></div>
+      <div class="readout"><small>缸内温度</small><b id="rT">330</b><span> K</span></div>
+      <div class="readout"><small>冷却液温度</small><b id="rCool">82</b><span> °C</span></div>
+      <div class="readout"><small>机油压力</small><b id="rOil">3.1</b><span> bar</span></div><div class="readout"><small>渲染帧率</small><b id="rFps">60</b><span> FPS</span></div><div class="readout"><small>当前焦点</small><b id="rFocus">1</b><span> 缸</span></div><div class="readout"><small>机油温度</small><b id="rOilT">90</b><span> °C</span></div><div class="readout"><small>增压压力</small><b id="rBoost">0.62</b><span> bar</span></div><div class="readout"><small>可见网格</small><b id="rMeshCount">0</b><span> meshes</span></div>
+    </div>
+    <div class="divider"></div><div class="sectionTitle">四缸相位 / 点火顺序</div><div id="cylinderStrip" class="desc" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"></div><div class="desc" style="margin-top:6px;color:#e2c77d">点火顺序 1–3–4–2；1/4 缸同相，2/3 缸同相，工作循环相位相差 180°。</div><div class="divider"></div><div class="sectionTitle">当前能量 / 流体状态</div><div id="energy" class="desc"></div>
+    <div class="divider"></div><div class="sectionTitle">模型细节图例</div>
+    <div class="partList">
+      <div class="partItem"><i style="background:#8ca2b3"></i>铸铁 / 钢制固定件</div>
+      <div class="partItem"><i style="background:#d8e1e8"></i>锻钢 / 精加工运动件</div>
+      <div class="partItem"><i style="background:#d9b75b"></i>燃油高压系统</div>
+      <div class="partItem"><i style="background:#38a6d6"></i>冷却液 / 水套</div>
+      <div class="partItem"><i style="background:#e0b548"></i>润滑油 / 主油道</div>
+      <div class="partItem"><i style="background:#ff7d43"></i>燃烧与高温排气</div>
+    </div>
+    <div class="divider"></div><div class="sectionTitle">基准对标</div><div class="desc">本版本按上传的 50.9 s 参考视频对标：四缸总成、透明剖视、爆炸、系统开关、悬浮信息卡、状态面板和示功图均纳入同一交互框架；额外加入四缸相位、P–θ/T–θ、焦点缸、自适应性能、部件级爆炸和可见网格统计。</div><div class="divider"></div><div class="sectionTitle">操作引导</div>
+    <div class="desc">左键拖拽旋转；滚轮缩放；右键拖拽平移。悬停任一主要零部件会显示中英文名称、材料、工艺、作用、关键设计参数和当前运动状态。爆炸视图可配合剖视模式观察内部结构。</div>
+    <div class="desc" style="margin-top:8px;color:#e2c77d">注：本网页采用参数化直列四缸教学数字样机。没有某一具体柴油机厂商的原始 CAD/公差图纸，因此不能把“0.1 mm 级”作为可计量制造精度承诺；本模型以视觉结构、相对尺寸和运动关系正确为目标。</div>
+  </aside>
+
+  <section id="bottomDock" class="panel">
+    <div>
+      <div class="sectionTitle">实时热力学曲线</div>
+      <div class="chartWrap">
+        <div class="chartBox"><div class="chartTitle">压力–曲轴角 P–θ</div><canvas class="chart" id="pChart" width="340" height="120"></canvas></div>
+        <div class="chartBox"><div class="chartTitle">温度–曲轴角 T–θ</div><canvas class="chart" id="tChart" width="340" height="120"></canvas></div>
+        <div class="chartBox"><div class="chartTitle">P–V 示功图</div><canvas class="chart" id="pvChart" width="340" height="120"></canvas></div>
+      </div>
+    </div>
+    <div>
+      <div class="sectionTitle">四冲程 / 流动状态</div>
+      <div class="legendFlow"><span><i style="background:#55cfff"></i>吸气</span><span><i style="background:#8d91ff"></i>压缩</span><span><i style="background:#ff8848"></i>做功</span><span><i style="background:#9ca5ad"></i>排气</span></div>
+      <div id="syncDesc" class="desc">曲轴、凸轮轴、气门、喷油与热力学状态按 720° 循环同步。</div>
+    </div>
+  </section>
+
+  <div id="loading"><div><div class="spinner"></div><b id="loadingTitle">正在载入 3D 引擎</b><small id="loadingDetail">正在尝试可用的 Three.js 镜像源…</small></div></div>
+  <div id="tooltip" class="panel"><h3 id="tipName"></h3><div class="en" id="tipEn"></div><dl><dt>材料/工艺</dt><dd id="tipMat"></dd><dt>功能</dt><dd id="tipFn"></dd><dt>关键参数</dt><dd id="tipParam"></dd><dt>当前状态</dt><dd id="tipState"></dd></dl></div>
+  <div id="fallback"><div><h2>3D 引擎加载失败</h2><p>3D 引擎镜像源均不可用。请确认浏览器可访问互联网后刷新；页面会自动在 cdnjs、jsDelivr、unpkg 之间回退，不会无限停在构建状态。</p></div></div>
+</div>
+
+<script>
+window.__startDieselEngine=function(){
+'use strict';
+if(!window.THREE || !THREE.OrbitControls){document.getElementById('fallback').style.display='flex';return;}
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const canvas=$('#canvas3d'), viewport=$('#viewport');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:'high-performance'});
+let pixelRatio=Math.min(devicePixelRatio,1.65); renderer.setPixelRatio(pixelRatio); renderer.outputEncoding=THREE.sRGBEncoding; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.1; renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene(); scene.fog=new THREE.FogExp2(0x071019,0.00135);
+const camera=new THREE.PerspectiveCamera(40,1,.1,5000); camera.position.set(720,520,980);
+const controls=new THREE.OrbitControls(camera,renderer.domElement); controls.enableDamping=true; controls.dampingFactor=.065; controls.target.set(0,240,0); controls.minDistance=420; controls.maxDistance=2200; controls.screenSpacePanning=true;
+scene.add(new THREE.HemisphereLight(0xb8dcff,0x11171d,1.35));
+const key=new THREE.DirectionalLight(0xffffff,1.65);key.position.set(520,780,460);key.castShadow=true;key.shadow.mapSize.set(2048,2048);key.shadow.camera.left=-900;key.shadow.camera.right=900;key.shadow.camera.top=900;key.shadow.camera.bottom=-900;scene.add(key);
+const rim=new THREE.DirectionalLight(0x5da8ff,1.0);rim.position.set(-650,420,-620);scene.add(rim);
+const warm=new THREE.PointLight(0xffa36a,.68,1300);warm.position.set(360,380,360);scene.add(warm);
+
+const materials={
+ cast:new THREE.MeshStandardMaterial({color:0x455c6e,roughness:.60,metalness:.50}), castDark:new THREE.MeshStandardMaterial({color:0x243746,roughness:.72,metalness:.38}),
+ steel:new THREE.MeshStandardMaterial({color:0xb9c8d3,roughness:.27,metalness:.90}), steelDark:new THREE.MeshStandardMaterial({color:0x748999,roughness:.34,metalness:.84}), polished:new THREE.MeshStandardMaterial({color:0xe0e8ed,roughness:.12,metalness:1}),
+ alu:new THREE.MeshStandardMaterial({color:0xaabcc8,roughness:.36,metalness:.72}), black:new THREE.MeshStandardMaterial({color:0x10171d,roughness:.84,metalness:.18}), rubber:new THREE.MeshStandardMaterial({color:0x0c1014,roughness:.96,metalness:.02}),
+ fuel:new THREE.MeshStandardMaterial({color:0xd5ad4f,roughness:.30,metalness:.76}), brass:new THREE.MeshStandardMaterial({color:0xbe8734,roughness:.28,metalness:.78}), blue:new THREE.MeshStandardMaterial({color:0x257ba7,roughness:.43,metalness:.42}), red:new THREE.MeshStandardMaterial({color:0xaa463b,roughness:.48,metalness:.38}),
+ translucent:new THREE.MeshPhysicalMaterial({color:0x54738c,roughness:.31,metalness:.20,transparent:true,opacity:.23,transmission:.15,depthWrite:false,side:THREE.DoubleSide}),
+ headGlass:new THREE.MeshPhysicalMaterial({color:0x7795ac,roughness:.28,metalness:.18,transparent:true,opacity:.30,transmission:.10,depthWrite:false,side:THREE.DoubleSide}),
+ water:new THREE.MeshPhysicalMaterial({color:0x209bc9,roughness:.18,metalness:.04,transparent:true,opacity:.20,depthWrite:false,side:THREE.DoubleSide}),
+ glass:new THREE.MeshPhysicalMaterial({color:0x88d4ff,roughness:.10,metalness:0,transparent:true,opacity:.12,depthWrite:false,side:THREE.DoubleSide}), gasket:new THREE.MeshStandardMaterial({color:0x32383d,roughness:.93,metalness:.05}),
+ bronze:new THREE.MeshStandardMaterial({color:0xb68a52,roughness:.36,metalness:.66})
+};
+
+const root=new THREE.Group();scene.add(root);
+const systems={fixed:new THREE.Group(),motion:new THREE.Group(),valve:new THREE.Group(),fuel:new THREE.Group(),oil:new THREE.Group(),cooling:new THREE.Group(),gas:new THREE.Group(),details:new THREE.Group()};Object.values(systems).forEach(g=>root.add(g));
+const interactives=[], labels=[]; const dims={bore:96,stroke:105,crankR:52.5,rodL:175,crankY:92,deckY:455,compressionRatio:17.2,spacing:112};
+const zc=[-168,-56,56,168], phaseOffset=[0,540,180,360];
+let angle=0,playing=true,rpm=900,load=55,timeScale=1,cutaway=true,explode=0,selectedSystem='all',focusCylinder=1,tour=false;const systemEnabled={motion:true,valve:true,fuel:true,oil:true,cooling:true,gas:true};
+let oilVisible=true,coolVisible=true,gasVisible=true,labelVisible=true,oilFlow=18,coolantFlow=52,fps=60;
+const cylinders=[]; let focusThermo={P:1,T:330,V:1};
+
+function mesh(g,m,pos=[0,0,0],rot=[0,0,0],name=''){const o=new THREE.Mesh(g,m);o.position.set(...pos);o.rotation.set(...rot);o.castShadow=true;o.receiveShadow=true;o.name=name;return o;}
+function box(sx,sy,sz,m,pos=[0,0,0],rot=[0,0,0],name=''){return mesh(new THREE.BoxGeometry(sx,sy,sz,2,2,2),m,pos,rot,name)}
+function cyl(r,h,m,pos=[0,0,0],rot=[0,0,0],rad=40,name=''){return mesh(new THREE.CylinderGeometry(r,r,h,rad),m,pos,rot,name)}
+function torus(R,r,m,pos=[0,0,0],rot=[0,0,0],name=''){return mesh(new THREE.TorusGeometry(R,r,12,56),m,pos,rot,name)}
+function tube(points,r,m,segments=48){const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)));const o=mesh(new THREE.TubeGeometry(curve,segments,r,10,false),m);o.userData.curve=curve;return o;}
+function info(obj,meta,sys){obj.userData.meta=meta;obj.userData.system=sys;obj.traverse(c=>{if(c.isMesh){c.userData.meta=meta;c.userData.system=sys;interactives.push(c)}});return obj;}
+function spring(x,y,z){const pts=[];for(let i=0;i<=48;i++){const t=i/48;pts.push(new THREE.Vector3(x+9*Math.cos(t*Math.PI*14),y+t*65,z+9*Math.sin(t*Math.PI*14)))}return tube(pts.map(p=>[p.x,p.y,p.z]),1.5,materials.steelDark,48)}
+function gear(r,teeth,pos){const sh=new THREE.Shape();for(let i=0;i<teeth*2;i++){const a=i/(teeth*2)*Math.PI*2, rr=i%2===0?r:r-4;const x=rr*Math.cos(a),y=rr*Math.sin(a);i?sh.lineTo(x,y):sh.moveTo(x,y)}const geo=new THREE.ExtrudeGeometry(sh,{depth:12,bevelEnabled:false});geo.translate(0,0,-6);return mesh(geo,materials.steelDark,pos,[0,Math.PI/2,0]);}
+function alignY(obj,a,b){const v=b.clone().sub(a),len=v.length(),mid=a.clone().add(b).multiplyScalar(.5);obj.position.copy(mid);obj.scale.y=len/100;obj.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),v.normalize());}
+function localAngle(i){return ((angle-phaseOffset[i])%720+720)%720}
+function phaseAt(a){return Math.floor(a/180)}
+function crankState(a,z){const th=(a%360)*Math.PI/180,r=dims.crankR,l=dims.rodL;const x=r*Math.sin(th),cy=dims.crankY+r*Math.cos(th),py=dims.crankY+r*Math.cos(th)+Math.sqrt(l*l-r*r*Math.sin(th)**2);return{th,x,cy,py,pin:new THREE.Vector3(x,cy,z),wrist:new THREE.Vector3(0,py,z)}}
+function valveLift(a,type){a=((a%720)+720)%720;if(type==='in'){if(a>=700||a<=215){let u=a>=700?(a-700)/235:(a+20)/235;return 10.2*Math.pow(Math.sin(Math.PI*Math.max(0,Math.min(1,u))),1.6)}return 0}else{if(a>=500||a<=25){let u=a>=500?(a-500)/245:(a+220)/245;return 9.8*Math.pow(Math.sin(Math.PI*Math.max(0,Math.min(1,u))),1.6)}return 0}}
+function injecting(a){return a>=342&&a<=385}
+function thermoAt(a){a=((a%720)+720)%720;const s=crankState(a,0),r=dims.crankR,l=dims.rodL,yT=dims.crankY+r+l,yB=dims.crankY-r+l;const frac=Math.max(0,Math.min(1,(yT-s.py)/(yT-
