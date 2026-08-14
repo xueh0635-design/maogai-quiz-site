@@ -1,0 +1,164 @@
+HTML_BYTES=83637
+HTML_CHARS=76452
+HAS_MIRROR_STATUS=True
+HAS_THREE_GLOBAL_CHECK=True
+SCRIPT_SRC_TAGS:
+HTTPS_URLS:
+  https://cdn.j
+  https://cdnj
+  https://unpkg.com/three@0.128.0/build/three.min.j
+  https://unpkg.com/three@0.128.0/example
+
+=== 正在尝试可用的 Three.js 镜像源 @ 19796 ===
+和当前运动状态。爆炸视图可配合剖视模式观察内部结构。</div>
+    <div class="desc" style="margin-top:8px;color:#e2c77d">注：本网页采用参数化直列四缸教学数字样机。没有某一具体柴油机厂商的原始 CAD/公差图纸，因此不能把“0.1 mm 级”作为可计量制造精度承诺；本模型以视觉结构、相对尺寸和运动关系正确为目标。</div>
+  </aside>
+
+  <section id="bottomDock" class="panel"><div class="sectionTitle">四冲程循环演示</div><div class="strokeCards"><div class="strokeCard"><b>① 进气冲程</b>0° – 180°</div><div class="strokeCard"><b>② 压缩冲程</b>180° – 360°</div><div class="strokeCard"><b>③ 做功冲程</b>360° – 540°</div><div class="strokeCard"><b>④ 排气冲程</b>540° – 720°</div></div><div class="cycleTrack"><i id="cycleTrackFill"></i></div><div id="syncDesc" class="desc" style="margin-top:7px">曲轴、凸轮轴、气门、喷油与热力学状态按 720° 循环同步。</div><div class="hiddenCharts"><canvas id="pChart" width="340" height="120"></canvas><canvas id="tChart" width="340" height="120"></canvas><canvas id="pvChart" width="340" height="120"></canvas></div></section>
+
+  <div id="loading"><div><div class="spinner"></div><b id="loadingTitle">正在载入 3D 引擎</b><small id="loadingDetail">正在尝试可用的 Three.js 镜像源…</small></div></div>
+  <div id="tooltip" class="panel"><h3 id="tipName"></h3><div class="en" id="tipEn"></div><dl><dt>材料/工艺</dt><dd id="tipMat"></dd><dt>功能</dt><dd id="tipFn"></dd><dt>关键参数</dt><dd id="tipParam"></dd><dt>当前状态</dt><dd id="tipState"></dd></dl></div>
+  <div id="fallback"><div><h2>3D 引擎加载失败</h2><p>3D 引擎镜像源均不可用。请确认浏览器可访问互联网后刷新；页面会自动在 cdnjs、jsDelivr、unpkg 之间回退，不会无限停在构建状态。</p></div></div>
+</div>
+
+<script>
+window.__startDieselEngine=function(){
+'use strict';
+if(!window.THREE || !THREE.OrbitControls){document.getElementById('fallback').style.display='flex';return;}
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const canvas=$('#canvas3d'), viewport=$('#viewport');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:'high-performance'});
+let pixelRatio=Math.min(devicePixelRatio,1.65); renderer.setPixelRatio(pixelRatio); renderer.outputEncoding=THREE.sRGBEncoding; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.14; renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x03070b); scene.fog=new THREE.FogExp2(0x03070b,0.00016);
+const camera=new THREE.PerspectiveCamera(31,1,.1,5000); camera.position.set(0,335,1080);
+const controls=new THREE.OrbitControls(camera,renderer.domElement); controls.enableDamping=true; controls.dampingFactor=.065; controls.target.set(0,275,0); controls.minDistance=260; controls.maxDistance=2200; controls.screenSpacePanning=true;
+scene.add(new THREE.HemisphereLight(0xd9ecff,0x080b0e,1.35)); scene.add(new THREE.AmbientLight(0xffffff,.08));
+const key=new THREE.DirectionalLight(0xfff7e8,2.05);key.position.set(520,780,460);key.castShadow=true;key.shadow.mapSize.set(2048,2048);key.shadow.camera.left=-900;key.shadow.camera.right=900;key.shadow.camera.top=900;key.shadow.camera.bottom=-900;key.shadow.bias=-0.00015;key.shadow.normalBias=.025;scene.add(key);
+const rim=new THREE.DirectionalLight(0x65b9ff,1.05);rim.position.set(-650,420,-620);scene.add(rim);
+const warm=new THREE.PointLight(0xffb78c,.35,1200);warm.position.set(360,380,360);scene.add(warm);
+const frontFill=new THREE.DirectionalLight(0xeaf6ff,.62);frontFill.position.set(0,420,1050);scene.add(frontFill);const lowFill=new THREE.DirectionalLight(0x8fb9d8,.10);lowFill.position.set(-180,-250,480);scene.add(lowFill);
+
+const materials={
+ cast:new THREE.MeshStandardMaterial({c
+
+=== Three.js @ 19804 ===
+爆炸视图可配合剖视模式观察内部结构。</div>
+    <div class="desc" style="margin-top:8px;color:#e2c77d">注：本网页采用参数化直列四缸教学数字样机。没有某一具体柴油机厂商的原始 CAD/公差图纸，因此不能把“0.1 mm 级”作为可计量制造精度承诺；本模型以视觉结构、相对尺寸和运动关系正确为目标。</div>
+  </aside>
+
+  <section id="bottomDock" class="panel"><div class="sectionTitle">四冲程循环演示</div><div class="strokeCards"><div class="strokeCard"><b>① 进气冲程</b>0° – 180°</div><div class="strokeCard"><b>② 压缩冲程</b>180° – 360°</div><div class="strokeCard"><b>③ 做功冲程</b>360° – 540°</div><div class="strokeCard"><b>④ 排气冲程</b>540° – 720°</div></div><div class="cycleTrack"><i id="cycleTrackFill"></i></div><div id="syncDesc" class="desc" style="margin-top:7px">曲轴、凸轮轴、气门、喷油与热力学状态按 720° 循环同步。</div><div class="hiddenCharts"><canvas id="pChart" width="340" height="120"></canvas><canvas id="tChart" width="340" height="120"></canvas><canvas id="pvChart" width="340" height="120"></canvas></div></section>
+
+  <div id="loading"><div><div class="spinner"></div><b id="loadingTitle">正在载入 3D 引擎</b><small id="loadingDetail">正在尝试可用的 Three.js 镜像源…</small></div></div>
+  <div id="tooltip" class="panel"><h3 id="tipName"></h3><div class="en" id="tipEn"></div><dl><dt>材料/工艺</dt><dd id="tipMat"></dd><dt>功能</dt><dd id="tipFn"></dd><dt>关键参数</dt><dd id="tipParam"></dd><dt>当前状态</dt><dd id="tipState"></dd></dl></div>
+  <div id="fallback"><div><h2>3D 引擎加载失败</h2><p>3D 引擎镜像源均不可用。请确认浏览器可访问互联网后刷新；页面会自动在 cdnjs、jsDelivr、unpkg 之间回退，不会无限停在构建状态。</p></div></div>
+</div>
+
+<script>
+window.__startDieselEngine=function(){
+'use strict';
+if(!window.THREE || !THREE.OrbitControls){document.getElementById('fallback').style.display='flex';return;}
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const canvas=$('#canvas3d'), viewport=$('#viewport');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:'high-performance'});
+let pixelRatio=Math.min(devicePixelRatio,1.65); renderer.setPixelRatio(pixelRatio); renderer.outputEncoding=THREE.sRGBEncoding; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.14; renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x03070b); scene.fog=new THREE.FogExp2(0x03070b,0.00016);
+const camera=new THREE.PerspectiveCamera(31,1,.1,5000); camera.position.set(0,335,1080);
+const controls=new THREE.OrbitControls(camera,renderer.domElement); controls.enableDamping=true; controls.dampingFactor=.065; controls.target.set(0,275,0); controls.minDistance=260; controls.maxDistance=2200; controls.screenSpacePanning=true;
+scene.add(new THREE.HemisphereLight(0xd9ecff,0x080b0e,1.35)); scene.add(new THREE.AmbientLight(0xffffff,.08));
+const key=new THREE.DirectionalLight(0xfff7e8,2.05);key.position.set(520,780,460);key.castShadow=true;key.shadow.mapSize.set(2048,2048);key.shadow.camera.left=-900;key.shadow.camera.right=900;key.shadow.camera.top=900;key.shadow.camera.bottom=-900;key.shadow.bias=-0.00015;key.shadow.normalBias=.025;scene.add(key);
+const rim=new THREE.DirectionalLight(0x65b9ff,1.05);rim.position.set(-650,420,-620);scene.add(rim);
+const warm=new THREE.PointLight(0xffb78c,.35,1200);warm.position.set(360,380,360);scene.add(warm);
+const frontFill=new THREE.DirectionalLight(0xeaf6ff,.62);frontFill.position.set(0,420,1050);scene.add(frontFill);const lowFill=new THREE.DirectionalLight(0x8fb9d8,.10);lowFill.position.set(-180,-250,480);scene.add(lowFill);
+
+const materials={
+ cast:new THREE.MeshStandardMaterial({color:0x8
+
+=== OrbitControls @ 20315 ===
+°</div></div><div class="cycleTrack"><i id="cycleTrackFill"></i></div><div id="syncDesc" class="desc" style="margin-top:7px">曲轴、凸轮轴、气门、喷油与热力学状态按 720° 循环同步。</div><div class="hiddenCharts"><canvas id="pChart" width="340" height="120"></canvas><canvas id="tChart" width="340" height="120"></canvas><canvas id="pvChart" width="340" height="120"></canvas></div></section>
+
+  <div id="loading"><div><div class="spinner"></div><b id="loadingTitle">正在载入 3D 引擎</b><small id="loadingDetail">正在尝试可用的 Three.js 镜像源…</small></div></div>
+  <div id="tooltip" class="panel"><h3 id="tipName"></h3><div class="en" id="tipEn"></div><dl><dt>材料/工艺</dt><dd id="tipMat"></dd><dt>功能</dt><dd id="tipFn"></dd><dt>关键参数</dt><dd id="tipParam"></dd><dt>当前状态</dt><dd id="tipState"></dd></dl></div>
+  <div id="fallback"><div><h2>3D 引擎加载失败</h2><p>3D 引擎镜像源均不可用。请确认浏览器可访问互联网后刷新；页面会自动在 cdnjs、jsDelivr、unpkg 之间回退，不会无限停在构建状态。</p></div></div>
+</div>
+
+<script>
+window.__startDieselEngine=function(){
+'use strict';
+if(!window.THREE || !THREE.OrbitControls){document.getElementById('fallback').style.display='flex';return;}
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const canvas=$('#canvas3d'), viewport=$('#viewport');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:'high-performance'});
+let pixelRatio=Math.min(devicePixelRatio,1.65); renderer.setPixelRatio(pixelRatio); renderer.outputEncoding=THREE.sRGBEncoding; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.14; renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x03070b); scene.fog=new THREE.FogExp2(0x03070b,0.00016);
+const camera=new THREE.PerspectiveCamera(31,1,.1,5000); camera.position.set(0,335,1080);
+const controls=new THREE.OrbitControls(camera,renderer.domElement); controls.enableDamping=true; controls.dampingFactor=.065; controls.target.set(0,275,0); controls.minDistance=260; controls.maxDistance=2200; controls.screenSpacePanning=true;
+scene.add(new THREE.HemisphereLight(0xd9ecff,0x080b0e,1.35)); scene.add(new THREE.AmbientLight(0xffffff,.08));
+const key=new THREE.DirectionalLight(0xfff7e8,2.05);key.position.set(520,780,460);key.castShadow=true;key.shadow.mapSize.set(2048,2048);key.shadow.camera.left=-900;key.shadow.camera.right=900;key.shadow.camera.top=900;key.shadow.camera.bottom=-900;key.shadow.bias=-0.00015;key.shadow.normalBias=.025;scene.add(key);
+const rim=new THREE.DirectionalLight(0x65b9ff,1.05);rim.position.set(-650,420,-620);scene.add(rim);
+const warm=new THREE.PointLight(0xffb78c,.35,1200);warm.position.set(360,380,360);scene.add(warm);
+const frontFill=new THREE.DirectionalLight(0xeaf6ff,.62);frontFill.position.set(0,420,1050);scene.add(frontFill);const lowFill=new THREE.DirectionalLight(0x8fb9d8,.10);lowFill.position.set(-180,-250,480);scene.add(lowFill);
+
+const materials={
+ cast:new THREE.MeshStandardMaterial({color:0x8e969a,roughness:.34,metalness:.63,emissive:0x030405,emissiveIntensity:.02}), castDark:new THREE.MeshStandardMaterial({color:0x31363a,roughness:.48,metalness:.66,emissive:0x020304,emissiveIntensity:.02}),
+ steel:new THREE.MeshStandardMaterial({color:0xc1c5c7,roughness:.25,metalness:.90}), steelDark:new THREE.MeshStandardMaterial({color:0x4d5357,roughness:.30,metalness:.88}), polished:new THREE.MeshStandardMaterial({color:0xe1e4e5,roughness:.12,metalness:.98}),
+ alu:new THREE.MeshStandardMaterial({color:0xb7
+
+=== loadScript @ 74408 ===
+tUiUpdate>100){updateReadouts();lastUiUpdate=now}
+ if(now-lastChartUpdate>66){drawChart($('#pvSide'),'PV');lastChartUpdate=now}
+ if(tour){const t=(now-tourStart)/1000,stage=Math.floor(t/4)%5;if(stage===0){setView('iso');explode=0}else if(stage===1){setView('front');explode=35}else if(stage===2){setView('side');explode=68}else if(stage===3){setView('top');explode=45}else{setView('iso');explode=0}updateExplode()}
+ renderer.render(scene,camera);fpsAcc+=dt;fpsFrames++;
+ if(now-lastFps>700){fps=fpsFrames/Math.max(.001,fpsAcc);fpsAcc=0;fpsFrames=0;lastFps=now;if(fps<45)lowFpsSeconds+=.7;else lowFpsSeconds=Math.max(0,lowFpsSeconds-.7);if(lowFpsSeconds>3&&pixelRatio>1.05){pixelRatio=Math.max(1,pixelRatio-.15);renderer.setPixelRatio(pixelRatio);resize();lowFpsSeconds=0}}
+}
+requestAnimationFrame(animate);
+};
+
+(function loadEngineLibraries(){
+ const loading=document.getElementById('loading'), detail=document.getElementById('loadingDetail'), fallback=document.getElementById('fallback');
+ function loadScript(url,timeoutMs){return new Promise((resolve,reject)=>{const sc=document.createElement('script');let done=false;const timer=setTimeout(()=>{if(done)return;done=true;sc.remove();reject(new Error('timeout'))},timeoutMs);sc.src=url;sc.async=true;sc.crossOrigin='anonymous';sc.onload=()=>{if(done)return;done=true;clearTimeout(timer);resolve(url)};sc.onerror=()=>{if(done)return;done=true;clearTimeout(timer);sc.remove();reject(new Error('load error'))};document.head.appendChild(sc)})}
+ async function tryUrls(label,urls,test){for(let i=0;i<urls.length;i++){detail.textContent=`${label}：尝试镜像 ${i+1}/${urls.length}`;try{await loadScript(urls[i],6500);if(test())return urls[i]}catch(e){}}throw new Error(label+' unavailable')}
+ (async()=>{try{
+   await tryUrls('Three.js 核心',[ 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js','https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js','https://unpkg.com/three@0.128.0/build/three.min.js' ],()=>!!window.THREE);
+   await tryUrls('OrbitControls',[ 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js','https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js' ],()=>!!(window.THREE&&THREE.OrbitControls));
+   detail.textContent='引擎就绪，正在构建四缸数字样机…';
+   window.__startDieselEngine(); loading.style.display='none';
+ }catch(err){console.error(err);loading.style.display='none';fallback.style.display='flex'}})();
+})();
+</script>
+<div id="deployBadge" style="position:fixed;left:14px;bottom:12px;z-index:80;padding:6px 9px;border-radius:8px;background:rgba(5,12,20,.76);border:1px solid rgba(130,170,210,.28);color:#9fc7e8;font:11px system-ui;pointer-events:none">GitHub stable · v19 · REFERENCE VISUAL · CAD-LIKE CUTAWAY</div><div style="position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:90;padding:6px 12px;border:1px solid rgba(48,170,255,.5);border-radius:999px;background:rgba(3,10,16,.72);color:#aee4ff;font:11px system-ui;pointer-events:none">V19 · REFERENCE VISUAL · CUTAWAY CAD PASS</div></body>
+</html>
+
+
+=== script.src @ -1 ===
+
+=== window.THREE @ 20292 ===
+<b>④ 排气冲程</b>540° – 720°</div></div><div class="cycleTrack"><i id="cycleTrackFill"></i></div><div id="syncDesc" class="desc" style="margin-top:7px">曲轴、凸轮轴、气门、喷油与热力学状态按 720° 循环同步。</div><div class="hiddenCharts"><canvas id="pChart" width="340" height="120"></canvas><canvas id="tChart" width="340" height="120"></canvas><canvas id="pvChart" width="340" height="120"></canvas></div></section>
+
+  <div id="loading"><div><div class="spinner"></div><b id="loadingTitle">正在载入 3D 引擎</b><small id="loadingDetail">正在尝试可用的 Three.js 镜像源…</small></div></div>
+  <div id="tooltip" class="panel"><h3 id="tipName"></h3><div class="en" id="tipEn"></div><dl><dt>材料/工艺</dt><dd id="tipMat"></dd><dt>功能</dt><dd id="tipFn"></dd><dt>关键参数</dt><dd id="tipParam"></dd><dt>当前状态</dt><dd id="tipState"></dd></dl></div>
+  <div id="fallback"><div><h2>3D 引擎加载失败</h2><p>3D 引擎镜像源均不可用。请确认浏览器可访问互联网后刷新；页面会自动在 cdnjs、jsDelivr、unpkg 之间回退，不会无限停在构建状态。</p></div></div>
+</div>
+
+<script>
+window.__startDieselEngine=function(){
+'use strict';
+if(!window.THREE || !THREE.OrbitControls){document.getElementById('fallback').style.display='flex';return;}
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const canvas=$('#canvas3d'), viewport=$('#viewport');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:'high-performance'});
+let pixelRatio=Math.min(devicePixelRatio,1.65); renderer.setPixelRatio(pixelRatio); renderer.outputEncoding=THREE.sRGBEncoding; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.14; renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x03070b); scene.fog=new THREE.FogExp2(0x03070b,0.00016);
+const camera=new THREE.PerspectiveCamera(31,1,.1,5000); camera.position.set(0,335,1080);
+const controls=new THREE.OrbitControls(camera,renderer.domElement); controls.enableDamping=true; controls.dampingFactor=.065; controls.target.set(0,275,0); controls.minDistance=260; controls.maxDistance=2200; controls.screenSpacePanning=true;
+scene.add(new THREE.HemisphereLight(0xd9ecff,0x080b0e,1.35)); scene.add(new THREE.AmbientLight(0xffffff,.08));
+const key=new THREE.DirectionalLight(0xfff7e8,2.05);key.position.set(520,780,460);key.castShadow=true;key.shadow.mapSize.set(2048,2048);key.shadow.camera.left=-900;key.shadow.camera.right=900;key.shadow.camera.top=900;key.shadow.camera.bottom=-900;key.shadow.bias=-0.00015;key.shadow.normalBias=.025;scene.add(key);
+const rim=new THREE.DirectionalLight(0x65b9ff,1.05);rim.position.set(-650,420,-620);scene.add(rim);
+const warm=new THREE.PointLight(0xffb78c,.35,1200);warm.position.set(360,380,360);scene.add(warm);
+const frontFill=new THREE.DirectionalLight(0xeaf6ff,.62);frontFill.position.set(0,420,1050);scene.add(frontFill);const lowFill=new THREE.DirectionalLight(0x8fb9d8,.10);lowFill.position.set(-180,-250,480);scene.add(lowFill);
+
+const materials={
+ cast:new THREE.MeshStandardMaterial({color:0x8e969a,roughness:.34,metalness:.63,emissive:0x030405,emissiveIntensity:.02}), castDark:new THREE.MeshStandardMaterial({color:0x31363a,roughness:.48,metalness:.66,emissive:0x020304,emissiveIntensity:.02}),
+ steel:new THREE.MeshStandardMaterial({color:0xc1c5c7,roughness:.25,metalness:.90}), steelDark:new THREE.MeshStandardMaterial({color:0x4d5357,roughness:.30,metalness:.88}), polished:new THREE.MeshStandardMaterial({color:0xe1e4e5,roughness:.12,metalness:.98}),
+ alu:new THREE.MeshStand
+
+=== typeof THREE @ -1 ===
