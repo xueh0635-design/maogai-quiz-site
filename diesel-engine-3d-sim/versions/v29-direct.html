@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>直列四缸柴油机 · V29 Cranktrain + DOHC Geometry</title>
+<style>html,body,#stage{margin:0;width:100%;height:100%;border:0;background:#02070c;overflow:hidden}#boot{position:fixed;inset:0;display:grid;place-items:center;z-index:9;background:#02070c;color:#dff4ff;font:14px system-ui;text-align:center}</style>
+</head>
+<body>
+<div id="boot">正在进入 V29 · 曲轴总成 + DOHC 配气几何强化…</div>
+<iframe id="stage" src="v28-direct.html?v29base=1" title="V29 柴油机 3D 仿真"></iframe>
+<script>
+const outer=document.getElementById('stage');
+outer.addEventListener('load',()=>setTimeout(applyV29,3600));
+function deepest(){let f=outer,w=f.contentWindow,d=f.contentDocument;for(let i=0;i<7;i++){const n=d&&d.getElementById('stage');if(!n)break;f=n;w=f.contentWindow;d=f.contentDocument}return{w,d}}
+function applyV29(){
+ const q=deepest(),w=q.w,d=q.d,T=w&&w.THREE,p=w&&w.__v25PatchDebug;
+ if(!T||!p||!p.refRoot||!p.refCrank){document.getElementById('boot').textContent='V29 正在等待三维基础层…';setTimeout(applyV29,1100);return}
+ const scene=p.refRoot.parent,details=p.refDetails,motion=p.refMotion,valve=p.refValve,fuel=p.refFuel,gas=p.refGas,crank=p.refCrank;
+ const style=d.createElement('style');style.textContent=`
+ #leftPanel{width:206px!important;bottom:144px!important}#rightPanel{width:216px!important;bottom:144px!important}
+ #bottomDock{left:232px!important;right:242px!important;min-height:116px!important}
+ #topbar{height:49px!important}.topActions{gap:4px!important}.topActions button{padding:5px 7px!important;font-size:10px!important}
+ #v26Mode,#v27Mode,#v28Mode{display:none!important}.refCallout{font-size:10px!important;min-width:96px!important;max-width:138px!important;padding:6px 8px!important}
+ #viewport{background:radial-gradient(ellipse at 50% 43%,#173249 0%,#081520 53%,#010407 100%)!important}
+ @media(max-width:1180px){#leftPanel{width:190px!important}#rightPanel{width:198px!important}#bottomDock{left:214px!important;right:222px!important}}
+ `;d.head.appendChild(style);
+ const badge=d.querySelector('.qualityBadge');if(badge)badge.textContent='V29 · CRANKTRAIN + DOHC · TRUE CUTAWAY';
+ const dep=d.getElementById('deployBadge');if(dep)dep.textContent='GitHub stable · v29 · CRANKTRAIN / DOHC / 4-CYL CUTAWAY';
+ const M={
+  crank:new T.MeshPhysicalMaterial({color:0x30363a,roughness:.16,metalness:1,clearcoat:.22,clearcoatRoughness:.14}),
+  journal:new T.MeshPhysicalMaterial({color:0xe2e7e9,roughness:.075,metalness:1,clearcoat:.42,clearcoatRoughness:.07}),
+  steel:new T.MeshPhysicalMaterial({color:0xd7dde0,roughness:.11,metalness:1,clearcoat:.32,clearcoatRoughness:.09}),
+  dark:new T.MeshPhysicalMaterial({color:0x23282c,roughness:.42,metalness:.86}),
+  alloy:new T.MeshPhysicalMaterial({color:0xbfc7ca,roughness:.22,metalness:.93,clearcoat:.22}),
+  brass:new T.MeshPhysicalMaterial({color:0xb68542,roughness:.20,metalness:.95}),
+  bronze:new T.MeshPhysicalMaterial({color:0x9b6d37,roughness:.26,metalness:.90}),
+  iron:new T.MeshPhysicalMaterial({color:0x493b34,roughness:.49,metalness:.79}),
+  black:new T.MeshStandardMaterial({color:0x050607,roughness:.94,metalness:.03}),
+  cut:new T.MeshBasicMaterial({color:0xff3b30,transparent:true,opacity:.95,depthTest:false})
+ };
+ function mesh(g,m,pos=[0,0,0],rot=[0,0,0],name=''){const o=new T.Mesh(g,m);o.position.set(...pos);o.rotation.set(...rot);o.castShadow=o.receiveShadow=true;o.name=name;return o}
+ function box(x,y,z,m,pos,rot=[0,0,0],name=''){return mesh(new T.BoxGeometry(x,y,z,2,2,2),m,pos,rot,name)}
+ function cyl(r,h,m,pos,rot=[0,0,0],name='',seg=48){return mesh(new T.CylinderGeometry(r,r,h,seg),m,pos,rot,name)}
+ function torus(R,r,m,pos,rot=[0,0,0],name=''){return mesh(new T.TorusGeometry(R,r,12,56),m,pos,rot,name)}
+ function tube(points,r,m,name=''){const c=new T.CatmullRomCurve3(points.map(v=>new T.Vector3(...v)));return mesh(new T.TubeGeometry(c,56,r,10,false),m,[0,0,0],[0,0,0],name)}
+ function hex(r,h,m,pos,rot=[0,0,0],name='Hex Fastener'){return cyl(r,h,m,pos,rot,name,6)}
+ function camLobeGeom(width=18){const s=new T.Shape(),N=72,base=13,nose=23;for(let i=0;i<N;i++){const a=i/N*Math.PI*2,c=Math.max(0,Math.cos(a)),rr=base+(nose-base)*Math.pow(c,3.25),x=rr*Math.cos(a),y=rr*Math.sin(a);i?s.lineTo(x,y):s.moveTo(x,y)}s.closePath();const g=new T.ExtrudeGeometry(s,{depth:width,bevelEnabled:true,bevelSize:1.2,bevelThickness:1.2,bevelSegments:2});g.translate(0,0,-width/2);g.rotateY(Math.PI/2);return g}
+ const X=[-180,-60,60,180],PH=[0,Math.PI,Math.PI,0];
+ // --- V29 cranktrain: remove the unrealistic straight through-axis and replace it with discrete journals/throws. ---
+ crank.traverse(o=>{if(o.isMesh&&o.name==='Crank Axis')o.visible=false});
+ const crank29=new T.Group();crank29.name='V29 Forged Four Cylinder Crankshaft';crank.add(crank29);
+ const mains=[-260,-130,0,130,260];
+ for(const x of mains){
+  crank29.add(cyl(26,44,M.journal,[x,0,0],[0,0,Math.PI/2],'Main Journal',56));
+  crank29.add(torus(29,2.2,M.bronze,[x-22,0,0],[0,Math.PI/2,0],'Main Bearing Thrust Face'));
+ }
+ for(let i=0;i<4;i++){
+  const x=X[i],ph=PH[i],oy=52*Math.cos(ph),oz=52*Math.sin(ph),my=oy*.48,mz=oz*.48;
+  crank29.add(cyl(21,72,M.journal,[x,oy,oz],[0,0,Math.PI/2],`Cylinder ${i+1} Crankpin`,52));
+  for(const sx of [-34,34]){
+   const cheek=cyl(49,18,M.crank,[x+sx,my,mz],[0,0,Math.PI/2],`Cylinder ${i+1} Crank Cheek`,48);cheek.scale.set(1,1.12,.78);crank29.add(cheek);
+   const cw=cyl(42,17,M.crank,[x+sx,-55*Math.cos(ph),-55*Math.sin(ph)],[0,0,Math.PI/2],`Cylinder ${i+1} Counterweight`,44);cw.scale.set(1,1.28,.82);crank29.add(cw);
+  }
+  crank29.add(cyl(4.1,22,M.black,[x,oy,oz+18],[Math.PI/2,0,0],`Cylinder ${i+1} Crankpin Oil Hole`,16));
+ }
+ crank29.add(cyl(17,94,M.journal,[-337,0,0],[0,0,Math.PI/2],'Crank Nose',44));
+ crank29.add(cyl(73,20,M.crank,[326,0,0],[0,0,Math.PI/2],'Flywheel Mounting Flange',56));
+ for(let k=0;k<8;k++){const a=k/8*Math.PI*2;crank29.add(cyl(5,18,M.journal,[336,Math.cos(a)*46,Math.sin(a)*46],[0,0,Math.PI/2],'Flywheel Flange Bolt',16))}
+ // --- Moving piston details attach to the actual piston meshes, so the new geometry follows each cylinder. ---
+ for(let i=0;i<4;i++){
+  let piston=null,rod=null;
+  motion.traverse(o=>{if(o.name===`Cylinder ${i+1} Piston`)piston=o;if(o.name===`Cylinder ${i+1} Connecting Rod`)rod=o});
+  if(piston){
+   const pg=new T.Group();pg.name=`V29 Cylinder ${i+1} Piston Detail`;piston.add(pg);
+   pg.add(torus(19,3.7,M.dark,[0,37,0],[Math.PI/2,0,0],'Deep Bowl Rim'));
+   for(const y of [20,27,34])pg.add(torus(44.2,1.15,M.journal,[0,y,0],[Math.PI/2,0,0],'Moving Piston Ring'));
+   pg.add(torus(13,3.1,M.steel,[0,1,0],[Math.PI/2,0,0],'Moving Wrist Pin Boss'));
+   // Dark inset skirt reliefs create actual depth cues on the front cutaway face.
+   pg.add(box(18,28,5,M.black,[-23,-15,42],[0,0,.10],'LH Skirt Relief'));pg.add(box(18,28,5,M.black,[23,-15,42],[0,0,-.10],'RH Skirt Relief'));
+  }
+  if(rod){
+   const rg=new T.Group();rg.name=`V29 Cylinder ${i+1} Rod Detail`;rod.add(rg);
+   rg.add(torus(26,5.8,M.journal,[0,-96,0],[Math.PI/2,0,0],'Moving Big End'));rg.add(torus(15,4.2,M.journal,[0,96,0],[Math.PI/2,0,0],'Moving Small End'));
+   rg.add(box(38,14,18,M.crank,[0,-107,0],[0,0,0],'Rod Cap'));for(const z of [-8,8])rg.add(hex(3.6,12,M.journal,[-13,-108,z],[Math.PI/2,0,0],'Rod Cap Bolt'));
+  }
+ }
+ // --- DOHC: replace generic circular lobes with nose-shaped lobes on the real rotating cam groups. ---
+ const camMeshes=[];valve.traverse(o=>{if(o.isMesh&&(o.name==='Intake Camshaft'||o.name==='Exhaust Camshaft'))camMeshes.push(o)});
+ for(const shaft of camMeshes){
+  const cg=shaft.parent;cg.traverse(o=>{if(o.isMesh&&o.name==='Cam Lobe')o.visible=false});
+  const isInt=shaft.name==='Intake Camshaft';
+  for(let i=0;i<4;i++)for(const dx of [-23,23]){
+   const l=mesh(camLobeGeom(17),M.crank,[X[i]+dx,0,0],[0,0,(isInt?1:-1)*(i*.34+dx*.008)],isInt?'V29 Intake Cam Lobe':'V29 Exhaust Cam Lobe');cg.add(l);
+  }
+ }
+ // Finger followers, spring retainers and valve bridges show the force path from cam nose to four valves per cylinder.
+ for(const x of X){
+  for(const z of [-34,34])for(const dx of [-18,18]){
+   const follower=box(28,7,15,M.steel,[x+dx,574,z],[0,0,(dx<0?-.16:.16)],'Finger Follower');valve.add(follower);
+   valve.add(torus(12,1.7,M.steel,[x+dx,561,z],[Math.PI/2,0,0],'Valve Spring Upper Seat'));
+   valve.add(hex(5,6,M.steel,[x+dx,568,z],[0,0,0],'Valve Keeper Cap'));
+  }
+  valve.add(box(54,8,18,M.dark,[x,584,0],[0,0,0],'Injector / Valve Bridge'));
+ }
+ // --- Common rail / injector hardware: union nuts, leak-off rail, sensor body and electrical connectors. ---
+ for(const x of X){
+  fuel.add(hex(8,11,M.steel,[x,667,86],[0,0,Math.PI/2],'High Pressure Union Nut'));
+  fuel.add(box(18,18,24,M.black,[x,559,18],[0,0,0],'Injector Electrical Connector'));
+  fuel.add(tube([[x,572,-12],[x+8,600,-30],[x,628,-48]],2.2,M.dark,'Injector Leak-off Hose'));
+ }
+ fuel.add(tube([[-220,628,-48],[-100,628,-48],[20,628,-48],[140,628,-48],[220,628,-48]],3.8,M.dark,'Leak-off Return Rail'));
+ fuel.add(cyl(12,36,M.brass,[326,667,86],[0,0,Math.PI/2],'Rail Pressure Sensor Body',28));fuel.add(box(22,18,28,M.black,[350,667,86],[0,0,0],'Rail Sensor Connector'));
+ // --- Exhaust/turbo refinement: four port collars, collector slip joints and visible compressor wheel. ---
+ for(const x of X){gas.add(torus(22,2.7,M.steel,[x,468,-76],[Math.PI/2,0,0],'Exhaust Port Collar'));for(const dx of [-18,18])gas.add(hex(5,7,M.steel,[x+dx,468,-91],[Math.PI/2,0,0],'Exhaust Flange Nut'))}
+ for(const x of [-140,-45,50,145])gas.add(torus(24,2.3,M.steel,[x,405,-184],[Math.PI/2,0,0],'Collector Slip Joint'));
+ const turbo29=new T.Group();turbo29.name='V29 Turbo Core Detail';turbo29.position.set(350,420,-126);gas.add(turbo29);
+ turbo29.add(cyl(7,86,M.journal,[38,0,0],[0,0,Math.PI/2],'Turbo Shaft',28));
+ for(let k=0;k<13;k++){const a=k/13*Math.PI*2;const blade=box(4,31,10,M.journal,[0,Math.cos(a)*19,Math.sin(a)*19],[a+.45,0,.38],'Compressor Wheel Blade');turbo29.add(blade)}
+ turbo29.add(torus(32,3.2,M.steel,[-29,0,0],[0,Math.PI/2,0],'Compressor V-band Clamp'));turbo29.add(torus(34,3.5,M.steel,[108,0,0],[0,Math.PI/2,0],'Turbine V-band Clamp'));
+ turbo29.add(cyl(13,58,M.brass,[76,45,20],[0,0,Math.PI/2],'Wastegate Actuator',28));turbo29.add(tube([[76,45,20],[94,30,10],[106,8,1]],3,M.brass,'Wastegate Link Rod'));
+ // --- Oil filter and gallery joints: gasket face, banjo bolts and clips. ---
+ details.add(torus(31,2.4,M.black,[300,177,148],[Math.PI/2,0,0],'Oil Filter Base Gasket'));
+ details.add(hex(8,12,M.steel,[266,176,148],[0,0,Math.PI/2],'Oil Feed Banjo Bolt'));details.add(hex(8,12,M.steel,[334,176,148],[0,0,Math.PI/2],'Oil Return Banjo Bolt'));
+ for(const x of [70,145,220])details.add(torus(7,1.6,M.steel,[x,148,130],[Math.PI/2,0,0],'Oil Pipe Support Clip'));
+ // --- Cutaway readability: keep the front physically open and emphasize machined section edges only. ---
+ details.traverse(o=>{if(o.isMesh&&['Crankcase Front Cover','Crankcase Rear Wall','Cylinder Bore'].includes(o.name))o.visible=false});
+ const v29Cuts=new T.Group();v29Cuts.name='V29 Section Edge Reinforcement';scene.add(v29Cuts);
+ for(const y of [454,548]){const e=box(648,4,5,M.cut,[0,y,116],[0,0,0],'Machined Section Edge');e.renderOrder=10;v29Cuts.add(e)}
+ // Default presentation: near-front, slight downward look, full four-cylinder cranktrain centered between side panels.
+ const front=d.querySelector('[data-view="front"]');if(front){front.click();front.textContent='剖视正面'}
+ const camera=[...scene.children].find(o=>o.isCamera);if(camera){camera.position.set(0,365,1560);camera.fov=28.5;camera.updateProjectionMatrix()}
+ const cut=d.getElementById('cutaway');if(cut&&!cut.classList.contains('active'))cut.click();
+ const mode=d.createElement('div');mode.id='v29Mode';mode.textContent='V29 · 四缸曲轴总成 / DOHC 16V / 中置喷油 / 开放剖视';mode.style.cssText='position:absolute;top:66px;left:50%;transform:translateX(-50%);z-index:4;padding:5px 11px;border:1px solid rgba(48,173,255,.52);border-radius:999px;background:rgba(2,9,15,.76);color:#c3ebff;font:10px system-ui;pointer-events:none';d.getElementById('app').appendChild(mode);
+ w.__v29Debug={ready:true,discreteCrank:true,crankThrows:4,mainJournals:5,movingPistonDetail:true,movingRodDetail:true,dohcNoseLobes:true,fingerFollowers:true,railDetail:true,turboCore:true,oilFittings:true,defaultFrontCutaway:true};
+ document.getElementById('boot').remove();
+}
+</script>
+</body>
+</html>
