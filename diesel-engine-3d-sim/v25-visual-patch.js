@@ -53,24 +53,32 @@
 
   function tunePhysical(m,opt){if(!m)return;if(opt.color!==undefined)m.color.setHex(opt.color);if(opt.roughness!==undefined)m.roughness=opt.roughness;if(opt.metalness!==undefined)m.metalness=opt.metalness;if('clearcoat' in m&&opt.clearcoat!==undefined)m.clearcoat=opt.clearcoat;if('clearcoatRoughness' in m&&opt.clearcoatRoughness!==undefined)m.clearcoatRoughness=opt.clearcoatRoughness;if('envMapIntensity' in m)m.envMapIntensity=opt.envMapIntensity===undefined?1.25:opt.envMapIntensity;m.dithering=true;m.needsUpdate=true}
 
+  // Micro-scale cast roughness/bump texture avoids the large uniform "plastic shell" look.
+  const nc=document.createElement('canvas');nc.width=nc.height=128;const nx=nc.getContext('2d');const ni=nx.createImageData(128,128);let seed=73129;
+  for(let i=0;i<16384;i++){seed=(seed*1664525+1013904223)>>>0;const n=174+((seed>>>24)&63),j=i*4;ni.data[j]=n;ni.data[j+1]=n;ni.data[j+2]=n;ni.data[j+3]=255}
+  nx.putImageData(ni,0,0);const castNoise=new THREE.CanvasTexture(nc);castNoise.wrapS=castNoise.wrapT=THREE.RepeatWrapping;castNoise.repeat.set(7,7);castNoise.minFilter=THREE.LinearFilter;castNoise.magFilter=THREE.LinearFilter;
+  function castGrain(m,bump=.14){if(!m)return;m.roughnessMap=castNoise;m.bumpMap=castNoise;m.bumpScale=bump;m.needsUpdate=true}
+
   tunePhysical(refM.cast,{color:0x777f84,roughness:.40,metalness:.80,clearcoat:.10,clearcoatRoughness:.46,envMapIntensity:1.18});
   tunePhysical(refM.castDark,{color:0x20262a,roughness:.49,metalness:.78,clearcoat:.06,clearcoatRoughness:.54,envMapIntensity:.98});
   tunePhysical(refM.alloy,{color:0xbec6ca,roughness:.24,metalness:.92,clearcoat:.24,clearcoatRoughness:.22,envMapIntensity:1.42});
-  tunePhysical(refM.machined,{color:0xe5e9eb,roughness:.09,metalness:1,clearcoat:.38,clearcoatRoughness:.11,envMapIntensity:1.58});
+  tunePhysical(refM.machined,{color:0xe1e6e9,roughness:.085,metalness:1,clearcoat:.40,clearcoatRoughness:.09,envMapIntensity:1.72});
   tunePhysical(refM.crank,{color:0x2b3034,roughness:.19,metalness:1,clearcoat:.16,clearcoatRoughness:.20,envMapIntensity:1.36});
   tunePhysical(refM.brass,{color:0xb17e3a,roughness:.22,metalness:.95,clearcoat:.18,clearcoatRoughness:.20,envMapIntensity:1.34});
   tunePhysical(refM.copper,{color:0x915936,roughness:.29,metalness:.92,clearcoat:.08,clearcoatRoughness:.32,envMapIntensity:1.18});
   tunePhysical(refM.black,{color:0x090c0f,roughness:.76,metalness:.28,envMapIntensity:.48});
   tunePhysical(refM.rubber,{color:0x030405,roughness:.96,metalness:.01,envMapIntensity:.12});
+  castGrain(refM.cast,.13);castGrain(refM.castDark,.16);
   refM.cut.color.setHex(0xff352b);refM.cut.opacity=1;refM.cut.needsUpdate=true;
 
   if(typeof m22!=='undefined'){
     tunePhysical(m22.dark,{color:0x242a2e,roughness:.43,metalness:.84,clearcoat:.10,clearcoatRoughness:.40,envMapIntensity:1.04});
     tunePhysical(m22.iron,{color:0x48403a,roughness:.48,metalness:.80,envMapIntensity:.98});
     tunePhysical(m22.alloy,{color:0xb9c2c6,roughness:.25,metalness:.92,clearcoat:.22,clearcoatRoughness:.22,envMapIntensity:1.38});
-    tunePhysical(m22.steel,{color:0xd9dfe2,roughness:.09,metalness:1,clearcoat:.34,clearcoatRoughness:.11,envMapIntensity:1.54});
+    tunePhysical(m22.steel,{color:0xd4dade,roughness:.11,metalness:1,clearcoat:.34,clearcoatRoughness:.10,envMapIntensity:1.58});
     tunePhysical(m22.bronze,{color:0xaa7836,roughness:.23,metalness:.94,envMapIntensity:1.28});
     tunePhysical(m22.hose,{color:0x06080a,roughness:.90,metalness:.04,envMapIntensity:.16});
+    castGrain(m22.dark,.12);castGrain(m22.iron,.14);
   }
   if(typeof coverMat!=='undefined')tunePhysical(coverMat,{color:0x42494e,roughness:.35,metalness:.86,clearcoat:.11,clearcoatRoughness:.34,envMapIntensity:1.06});
   if(typeof railBracketMat!=='undefined')tunePhysical(railBracketMat,{color:0x947b4d,roughness:.28,metalness:.88,envMapIntensity:1.18});
@@ -82,5 +90,5 @@
 
   let vignette=document.getElementById('v25StudioVignette');if(!vignette){vignette=document.createElement('div');vignette.id='v25StudioVignette';vignette.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at 52% 43%,rgba(0,0,0,0) 38%,rgba(0,0,0,.06) 62%,rgba(0,0,0,.42) 100%)';viewport.appendChild(vignette)}
   const badge=document.querySelector('.qualityBadge');if(badge)badge.textContent='V25 · BALANCED STUDIO PBR';
-  window.__v25VisualDebug={enabled:true,environment:!!scene.environment,exposure:renderer.toneMappingExposure,machinedRoughness:refM.machined.roughness,machinedEnv:refM.machined.envMapIntensity,castRoughness:refM.cast.roughness,brassMetalness:refM.brass.metalness,contactShadow:!!contactShadow,vignette:!!vignette,cameraPosition:camera.position.toArray(),cameraTarget:controls.target.toArray(),cameraFov:camera.fov};
+  window.__v25VisualDebug={enabled:true,environment:!!scene.environment,exposure:renderer.toneMappingExposure,machinedRoughness:refM.machined.roughness,machinedEnv:refM.machined.envMapIntensity,castRoughness:refM.cast.roughness,brassMetalness:refM.brass.metalness,contactShadow:!!contactShadow,vignette:!!vignette,castMicrotexture:!!refM.cast.bumpMap,cameraPosition:camera.position.toArray(),cameraTarget:controls.target.toArray(),cameraFov:camera.fov};
 })();
