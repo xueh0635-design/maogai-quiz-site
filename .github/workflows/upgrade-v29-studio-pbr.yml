@@ -1,0 +1,162 @@
+name: Upgrade V29 Studio PBR
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/upgrade-v29-studio-pbr.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply Studio PBR to current V29 chain
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('diesel-engine-3d-sim')
+          key='9b9e592'
+
+          # Force every nested wrapper to request the newly validated PBR base instead of a stale cached child.
+          chain=[
+            ('versions/v26-direct.html','v25-direct.html?base=v25&v26=1',f'v25-direct.html?base=v25&v26=1&pbr={key}'),
+            ('versions/v27-direct.html','v26-direct.html?v27base=1',f'v26-direct.html?v27base=1&pbr={key}'),
+            ('versions/v28-direct.html','v27-direct.html?v28base=1',f'v27-direct.html?v28base=1&pbr={key}'),
+            ('versions/v29-direct.html','v28-direct.html?v29base=1',f'v28-direct.html?v29base=1&pbr={key}')
+          ]
+          for rel,old,new in chain:
+              p=root/rel;t=p.read_text(encoding='utf-8')
+              if new not in t:
+                  assert old in t, f'missing nested source marker in {rel}'
+                  t=t.replace(old,new,1)
+              p.write_text(t,encoding='utf-8')
+
+          p=root/'versions/v29-direct.html';t=p.read_text(encoding='utf-8')
+          replacements={
+            "#viewport{background:radial-gradient(ellipse at 50% 43%,#173249 0%,#081520 53%,#010407 100%)!important}":"#viewport{background:radial-gradient(ellipse at 50% 43%,#122b40 0%,#071520 53%,#010407 100%)!important}",
+            "V29 · CRANKTRAIN + DOHC · TRUE CUTAWAY":"V29 · REFERENCE STUDIO PBR · CRANKTRAIN + DOHC",
+            "GitHub stable · v29 · CRANKTRAIN / DOHC / 4-CYL CUTAWAY":"GitHub stable · v29 · STUDIO PBR / CRANKTRAIN / DOHC / CUTAWAY",
+            "crank:new T.MeshPhysicalMaterial({color:0x30363a,roughness:.16,metalness:1,clearcoat:.22,clearcoatRoughness:.14})":"crank:new T.MeshPhysicalMaterial({color:0x2b3034,roughness:.18,metalness:1,clearcoat:.20,clearcoatRoughness:.15,envMapIntensity:1.28})",
+            "journal:new T.MeshPhysicalMaterial({color:0xe2e7e9,roughness:.075,metalness:1,clearcoat:.42,clearcoatRoughness:.07})":"journal:new T.MeshPhysicalMaterial({color:0xe1e6e9,roughness:.075,metalness:1,clearcoat:.42,clearcoatRoughness:.07,envMapIntensity:1.72})",
+            "steel:new T.MeshPhysicalMaterial({color:0xd7dde0,roughness:.11,metalness:1,clearcoat:.32,clearcoatRoughness:.09})":"steel:new T.MeshPhysicalMaterial({color:0xd4dade,roughness:.11,metalness:1,clearcoat:.32,clearcoatRoughness:.09,envMapIntensity:1.58})",
+            "dark:new T.MeshPhysicalMaterial({color:0x23282c,roughness:.42,metalness:.86})":"dark:new T.MeshPhysicalMaterial({color:0x1b2125,roughness:.50,metalness:.70,envMapIntensity:.72})",
+            "alloy:new T.MeshPhysicalMaterial({color:0xbfc7ca,roughness:.22,metalness:.93,clearcoat:.22})":"alloy:new T.MeshPhysicalMaterial({color:0x98a3a8,roughness:.30,metalness:.84,clearcoat:.16,clearcoatRoughness:.28,envMapIntensity:1.06})",
+            "brass:new T.MeshPhysicalMaterial({color:0xb68542,roughness:.20,metalness:.95})":"brass:new T.MeshPhysicalMaterial({color:0xc08a3d,roughness:.20,metalness:.96,envMapIntensity:1.34})",
+            "bronze:new T.MeshPhysicalMaterial({color:0x9b6d37,roughness:.26,metalness:.90})":"bronze:new T.MeshPhysicalMaterial({color:0x9e6f35,roughness:.28,metalness:.88,envMapIntensity:1.06})",
+            "iron:new T.MeshPhysicalMaterial({color:0x493b34,roughness:.49,metalness:.79})":"iron:new T.MeshPhysicalMaterial({color:0x3d3531,roughness:.52,metalness:.68,envMapIntensity:.74})",
+            "black:new T.MeshStandardMaterial({color:0x050607,roughness:.94,metalness:.03})":"black:new T.MeshStandardMaterial({color:0x040607,roughness:.95,metalness:.02,envMapIntensity:.10})",
+            "camera.position.set(0,365,1560);camera.fov=28.5;camera.updateProjectionMatrix()":"camera.position.set(120,355,2050);camera.fov=30.5;camera.updateProjectionMatrix()"
+          }
+          for old,new in replacements.items():
+              if new in t: continue
+              assert old in t, 'V29 source signature changed: '+old[:64]
+              t=t.replace(old,new,1)
+
+          old_debug="w.__v29Debug={ready:true,discreteCrank:true,crankThrows:4,mainJournals:5,movingPistonDetail:true,movingRodDetail:true,dohcNoseLobes:true,fingerFollowers:true,railDetail:true,turboCore:true,oilFittings:true,defaultFrontCutaway:true};"
+          new_debug="w.__v29Debug={ready:true,studioPBR:true,discreteCrank:true,crankThrows:4,mainJournals:5,movingPistonDetail:true,movingRodDetail:true,dohcNoseLobes:true,fingerFollowers:true,railDetail:true,turboCore:true,oilFittings:true,defaultFrontCutaway:true,journalRoughness:M.journal.roughness,journalEnv:M.journal.envMapIntensity,alloyRoughness:M.alloy.roughness,alloyEnv:M.alloy.envMapIntensity};"
+          if new_debug not in t:
+              assert old_debug in t, 'V29 debug signature changed'
+              t=t.replace(old_debug,new_debug,1)
+          p.write_text(t,encoding='utf-8')
+
+          # Refresh only the V29 route/cache key; keep V25-V28 history routes intact.
+          ip=root/'index.html';idx=ip.read_text(encoding='utf-8')
+          idx=idx.replace('versions/v29-direct.html?build=v29-cranktrain-dohc&cb=2ff60524',f'versions/v29-direct.html?build=v29-studio-pbr&cb={key}')
+          idx=idx.replace('四冲程柴油机 3D 仿真 · V29 Cranktrain + DOHC Geometry','四冲程柴油机 3D 仿真 · V29 Studio PBR + Cranktrain + DOHC')
+          idx=idx.replace('正在进入 V29 · 曲轴总成 + DOHC 配气几何强化…','正在进入 V29 · Studio PBR + 曲轴总成 + DOHC 配气几何强化…')
+          ip.write_text(idx,encoding='utf-8')
+
+          # Static assertions before browser validation.
+          v29=p.read_text(encoding='utf-8')
+          for token in [f'pbr={key}','studioPBR:true','envMapIntensity:1.72','envMapIntensity:1.06','camera.position.set(120,355,2050)','REFERENCE STUDIO PBR']:
+              assert token in v29, token
+          PY
+
+      - name: Install Chromium test driver
+        run: npm install --no-save puppeteer-core@24.16.0
+
+      - name: Launch local server
+        run: |
+          python3 -m http.server 8000 >/tmp/v29-pbr-http.log 2>&1 &
+          echo $! >/tmp/v29-pbr-http.pid
+          sleep 1
+
+      - name: Validate nested V29 Studio PBR and interactions
+        shell: bash
+        run: |
+          cat > ./v29-pbr-test.mjs <<'JS'
+          import puppeteer from 'puppeteer-core';
+          import fs from 'fs';
+          const exe=['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium','/usr/bin/chromium-browser'].find(p=>fs.existsSync(p));
+          if(!exe)throw new Error('No Chrome/Chromium');
+          const browser=await puppeteer.launch({executablePath:exe,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--enable-webgl','--ignore-gpu-blocklist','--use-angle=swiftshader']});
+          function installErrors(page){const a=[];page.on('pageerror',e=>a.push(e.stack||e.message));return a}
+          const deepState=()=>{
+            let f=document.getElementById('stage'),w=f&&f.contentWindow,d=f&&f.contentDocument;
+            for(let i=0;i<8&&d;i++){const n=d.getElementById('stage');if(!n)break;f=n;w=f.contentWindow;d=f.contentDocument}
+            return {w,d};
+          };
+
+          const page=await browser.newPage();const errors=installErrors(page);
+          await page.setViewport({width:1536,height:960,deviceScaleFactor:1});
+          await page.goto('http://127.0.0.1:8000/diesel-engine-3d-sim/versions/v29-direct.html?ci=studio-pbr-v29',{waitUntil:'domcontentloaded',timeout:30000});
+          await page.waitForFunction(()=>{
+            let f=document.getElementById('stage'),w=f&&f.contentWindow,d=f&&f.contentDocument;
+            for(let i=0;i<8&&d;i++){const n=d.getElementById('stage');if(!n)break;f=n;w=f.contentWindow;d=f.contentDocument}
+            return !!(w&&w.__v29Debug&&w.__v29Debug.ready&&w.__v25VisualDebug&&w.__v25VisualDebug.enabled);
+          },{timeout:90000,polling:500});
+          await new Promise(r=>setTimeout(r,1200));
+          const state=await page.evaluate(()=>{
+            let f=document.getElementById('stage'),w=f&&f.contentWindow,d=f&&f.contentDocument;
+            for(let i=0;i<8&&d;i++){const n=d.getElementById('stage');if(!n)break;f=n;w=f.contentWindow;d=f.contentDocument}
+            const p=w.__v25PatchDebug,scene=p.refRoot.parent,camera=[...scene.children].find(o=>o.isCamera);let crank=false,turbo=false,followers=0;
+            scene.traverse(o=>{if(o.name==='V29 Forged Four Cylinder Crankshaft')crank=true;if(o.name==='V29 Turbo Core Detail')turbo=true;if(o.name==='Finger Follower')followers++});
+            return {v25:w.__v25VisualDebug,v29:w.__v29Debug,env:!!scene.environment,crank,turbo,followers,camera:camera?camera.position.toArray():null,fov:camera&&camera.fov,badge:d.querySelector('.qualityBadge')?.textContent||'',fallback:d.getElementById('fallback')?getComputedStyle(d.getElementById('fallback')).display:null};
+          });
+          console.log('V29_STATE',JSON.stringify(state));
+          if(errors.length)throw new Error('desktop pageerror '+errors.slice(0,5).join('\n'));
+          if(!state.env||!state.crank||!state.turbo||state.followers<8||!state.v29.studioPBR)throw new Error('V29 geometry/PBR missing '+JSON.stringify(state));
+          if(!state.v25.environment||state.v25.hemisphereMax>.5||state.v25.studioFloorVisible!==false)throw new Error('V25 PBR base stale '+JSON.stringify(state.v25));
+          if(state.v29.journalEnv<1.65||state.v29.alloyRoughness<.27||state.v29.alloyEnv>1.15)throw new Error('V29 materials not balanced '+JSON.stringify(state.v29));
+          if(!state.camera||state.camera[2]<1850||state.camera[2]>2250)throw new Error('V29 framing failed '+JSON.stringify(state.camera));
+
+          const before=await page.evaluate(()=>{let f=document.getElementById('stage'),w=f.contentWindow,d=f.contentDocument;for(let i=0;i<8&&d;i++){const n=d.getElementById('stage');if(!n)break;f=n;w=f.contentWindow;d=f.contentDocument}return{p:w.__v25PatchDebug.refDetails.position.toArray(),active:d.getElementById('explode').classList.contains('active')}});
+          await page.evaluate(()=>{let f=document.getElementById('stage'),w=f.contentWindow,d=f.contentDocument;for(let i=0;i<8&&d;i++){const n=d.getElementById('stage');if(!n)break;f=n;w=f.contentWindow;d=f.contentDocument}const b=d.getElementById('explode');if(!b.classList.contains('active'))b.click()});
+          await new Promise(r=>setTimeout(r,1200));
+          const ex=await page.evaluate(()=>{let f=document.getElementById('stage'),w=f.contentWindow,d=f.contentDocument;for(let i=0;i<8&&d;i++){const n=d.getElementById('stage');if(!n)break;f=n;w=f.contentWindow;d=f.contentDocument}return{value:d.getElementById('explodeAmount').value,p:w.__v25PatchDebug.refDetails.position.toArray(),active:d.getElementById('explode').classList.contains('active')}});
+          const travel=Math.hypot(...ex.p.map((v,i)=>v-before.p[i]));if(ex.value!=='72'||!ex.active||travel<50)throw new Error('explode regression '+JSON.stringify({ex,travel}));
+
+          const cut=await page.evaluate(async()=>{let f=document.getElementById('stage'),w=f.contentWindow,d=f.contentDocument;for(let i=0;i<8&&d;i++){const n=d.getElementById('stage');if(!n)break;f=n;w=f.contentWindow;d=f.contentDocument}const b=d.getElementById('cutaway');if(!b.classList.contains('active'))b.click();b.click();w.__v25PatchDebug.updateV21(.016);const off={a:b.classList.contains('active'),front:w.__v25PatchDebug.frontCover.visible,section:w.__v25PatchDebug.sectionFrame.visible};b.click();w.__v25PatchDebug.updateV21(.016);const on={a:b.classList.contains('active'),front:w.__v25PatchDebug.frontCover.visible,section:w.__v25PatchDebug.sectionFrame.visible};return{off,on}});
+          if(cut.off.a||cut.off.front!==true||cut.off.section!==false||!cut.on.a||cut.on.front!==false||cut.on.section!==true)throw new Error('cutaway regression '+JSON.stringify(cut));
+          await page.screenshot({path:'/tmp/v29-studio-pbr.png'});console.log('DESKTOP_V29_PBR=PASS');
+
+          const mobile=await browser.newPage();const mobileErrors=installErrors(mobile);await mobile.setViewport({width:390,height:844,deviceScaleFactor:2,isMobile:true,hasTouch:true});
+          await mobile.goto('http://127.0.0.1:8000/diesel-engine-3d-sim/versions/v29-direct.html?ci=mobile-v29',{waitUntil:'domcontentloaded',timeout:30000});
+          await mobile.waitForFunction(()=>{let f=document.getElementById('stage'),w=f&&f.contentWindow,d=f&&f.contentDocument;for(let i=0;i<8&&d;i++){const n=d.getElementById('stage');if(!n)break;f=n;w=f.contentWindow;d=f.contentDocument}return !!(w&&w.__v29Debug?.studioPBR&&w.__v25VisualDebug?.environment)}, {timeout:90000,polling:600});
+          if(mobileErrors.length)throw new Error('mobile pageerror '+mobileErrors.slice(0,5).join('\n'));
+          console.log('MOBILE_V29_PBR=PASS');await browser.close();
+          JS
+          node ./v29-pbr-test.mjs
+          rm -f ./v29-pbr-test.mjs
+
+      - name: Upload V29 visual preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: v29-studio-pbr-preview
+          path: /tmp/v29-studio-pbr.png
+          retention-days: 7
+
+      - name: Commit only validated V29 integration
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diesel-engine-3d-sim/index.html diesel-engine-3d-sim/versions/v26-direct.html diesel-engine-3d-sim/versions/v27-direct.html diesel-engine-3d-sim/versions/v28-direct.html diesel-engine-3d-sim/versions/v29-direct.html
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'integrate validated Studio PBR into V29 geometry build'
+          git push
