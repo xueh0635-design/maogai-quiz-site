@@ -7,14 +7,16 @@
   viewport.style.background='radial-gradient(ellipse at 52% 39%,#183149 0%,#0a1723 38%,#050c13 67%,#010407 100%)';
 
   renderer.toneMapping=THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure=isMobileView?1.08:1.04;
+  renderer.toneMappingExposure=isMobileView?1.08:1.06;
   renderer.outputEncoding=THREE.sRGBEncoding;
   renderer.shadowMap.enabled=true;
   renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 
-  // Full-engine framing: leave clear air around turbo, flywheel and oil sump like the target reference.
+  // The base controller capped the camera at 2200, silently undoing wider framing.
+  // Raise only the desktop limit, then place the complete engine between the side panels.
   if(!isMobileView){
-    camera.position.set(310,390,2780);
+    controls.maxDistance=4200;
+    camera.position.set(310,390,2850);
     controls.target.set(0,295,0);
     camera.fov=31;
     camera.updateProjectionMatrix();
@@ -40,13 +42,20 @@
   const studioEnv=new THREE.CubeTexture([studioFace('warm'),studioFace('cool'),studioFace('neutral'),studioFace('neutral'),studioFace('neutral'),studioFace('cool')]);
   studioEnv.encoding=THREE.sRGBEncoding;studioEnv.needsUpdate=true;scene.environment=studioEnv;
 
-  // This is the exact lighting topology already validated by mobile Chromium.
-  key.color.setHex(0xfff0dc);key.intensity=1.46;key.position.set(560,790,610);
+  // Reduce only top-level ambient sources. The base HemisphereLight is 1.35 and was washing castings white.
+  // This is safe because no model-tree traversal or object replacement is involved.
+  for(const o of scene.children){
+    if(o.type==='HemisphereLight')o.intensity=Math.min(o.intensity,.55);
+    else if(o.type==='AmbientLight')o.intensity=Math.min(o.intensity,.04);
+  }
+
+  // Keep the previously validated cold/warm studio topology; only rebalance energy after ambient reduction.
+  key.color.setHex(0xfff0dc);key.intensity=1.54;key.position.set(560,790,610);
   key.shadow.mapSize.set(isMobileView?1536:3072,isMobileView?1536:3072);key.shadow.camera.left=-760;key.shadow.camera.right=760;key.shadow.camera.top=820;key.shadow.camera.bottom=-760;key.shadow.bias=-0.00012;key.shadow.normalBias=.018;
   rim.color.setHex(0x70b9ff);rim.intensity=1.14;rim.position.set(-720,470,-560);
   warm.color.setHex(0xffaf74);warm.intensity=.38;warm.distance=1350;warm.position.set(430,360,420);
-  frontFill.color.setHex(0xe9f5ff);frontFill.intensity=.34;frontFill.position.set(-120,430,1050);lowFill.intensity=.04;
-  if(typeof softTop!=='undefined'){softTop.intensity=.21;softTop.color.setHex(0xdcecff)}
+  frontFill.color.setHex(0xe9f5ff);frontFill.intensity=.30;frontFill.position.set(-120,430,1050);lowFill.intensity=.035;
+  if(typeof softTop!=='undefined'){softTop.intensity=.18;softTop.color.setHex(0xdcecff)}
   if(typeof edgeLight22!=='undefined'){edgeLight22.intensity=.31;edgeLight22.color.setHex(0x6dbdff)}
   const topSoft=new THREE.DirectionalLight(0xeaf4ff,.48);topSoft.position.set(-120,980,180);scene.add(topSoft);
   const warmKick=new THREE.DirectionalLight(0xffbd82,.29);warmKick.position.set(820,260,-250);scene.add(warmKick);
@@ -96,5 +105,6 @@
 
   let vignette=document.getElementById('v25StudioVignette');if(!vignette){vignette=document.createElement('div');vignette.id='v25StudioVignette';vignette.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at 52% 43%,rgba(0,0,0,0) 39%,rgba(0,0,0,.07) 63%,rgba(0,0,0,.47) 100%)';viewport.appendChild(vignette)}
   const badge=document.querySelector('.qualityBadge');if(badge)badge.textContent='V25 · REFERENCE STUDIO PBR';
-  window.__v25VisualDebug={enabled:true,environment:!!scene.environment,exposure:renderer.toneMappingExposure,machinedRoughness:refM.machined.roughness,machinedEnv:refM.machined.envMapIntensity,castRoughness:refM.cast.roughness,brassMetalness:refM.brass.metalness,contactShadow:!!contactShadow,vignette:!!vignette,castMicrotexture:!!refM.cast.bumpMap,cameraPosition:camera.position.toArray(),cameraTarget:controls.target.toArray(),cameraFov:camera.fov};
+  let hemiMax=0;for(const o of scene.children){if(o.type==='HemisphereLight')hemiMax=Math.max(hemiMax,o.intensity)}
+  window.__v25VisualDebug={enabled:true,environment:!!scene.environment,exposure:renderer.toneMappingExposure,machinedRoughness:refM.machined.roughness,machinedEnv:refM.machined.envMapIntensity,castRoughness:refM.cast.roughness,brassMetalness:refM.brass.metalness,contactShadow:!!contactShadow,vignette:!!vignette,castMicrotexture:!!refM.cast.bumpMap,hemisphereMax:hemiMax,cameraPosition:camera.position.toArray(),cameraTarget:controls.target.toArray(),cameraFov:camera.fov,cameraMaxDistance:controls.maxDistance};
 })();
