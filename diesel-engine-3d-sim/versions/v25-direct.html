@@ -452,7 +452,23 @@ info(refFilter,{cn:'机油滤清器',en:'Full-flow Oil Filter',mat:'钢壳滤芯
 info(flyV20,{cn:'飞轮总成',en:'Flywheel Assembly',mat:'高强度锻钢',fn:'储存转动能量并平抑四冲程扭矩波动。',param:'齿圈可见。',state:()=>`${rpm} rpm`},'motion');
 info(camA,{cn:'进气凸轮轴',en:'Intake Camshaft',mat:'表面硬化合金钢',fn:'按曲轴半速驱动进气门。',param:'DOHC 16V。',state:()=>`${Math.round((angle/2)%360)}° cam`},'valve');
 function flowSystemEnabled(name){if(name.includes('Intake')||name.includes('Exhaust'))return systemVisible('gas');if(name.includes('Fuel')||name.includes('Injector'))return systemVisible('fuel');if(name.includes('Oil')||name.includes('Lubrication'))return systemVisible('oil');if(name.includes('Coolant'))return systemVisible('cooling');return true}
-function updateV21(dt){const baseSpeed=Math.max(.25,rpm/1500);for(const g of flowSets){g.visible=flowSystemEnabled(g.name);for(const p of g.userData.arr){p.u=(p.u+dt*g.userData.speed*baseSpeed)%1;const q=g.userData.curve.getPointAt(p.u);p.m.position.copy(q);const pulse=.78+.28*Math.sin((p.u*16+performance.now()*.002));p.m.scale.setScalar(pulse)}}const cut=!!cutaway;sectionFrame.visible=cut;upperCover.visible=!cut;for(const o of detail21.children){if(o.name&&o.name.includes('Coolant Water Jacket'))o.visible=cut&&systemVisible('cooling')}}
+function updateV21(dt){
+ const safeDt=Math.max(0,Math.min(.05,Number.isFinite(dt)?dt:0));
+ const baseSpeed=Math.max(.25,rpm/1500);
+ for(const g of flowSets){
+  g.visible=flowSystemEnabled(g.name);
+  for(const p of g.userData.arr){
+   const next=p.u+safeDt*g.userData.speed*baseSpeed;
+   p.u=((next%1)+1)%1;
+   const q=g.userData.curve.getPointAt(p.u);
+   if(q)p.m.position.copy(q);
+   const pulse=.78+.28*Math.sin((p.u*16+performance.now()*.002));
+   p.m.scale.setScalar(pulse)
+  }
+ }
+ const cut=!!cutaway;sectionFrame.visible=cut;upperCover.visible=!cut;
+ for(const o of detail21.children){if(o.name&&o.name.includes('Coolant Water Jacket'))o.visible=cut&&systemVisible('cooling')}
+}
 
 // === V22 INDUSTRIAL HARDWARE + FLOW RENDER PASS ===
 const v22Root=new THREE.Group();v22Root.name='V22 Industrial Hardware';scene.add(v22Root);
@@ -540,11 +556,19 @@ __v25Patch.updateV22=updateV22;
 __v25Patch.updateV23=updateV23;
 __v25Patch.frontCover=(typeof frontCover!=='undefined'?frontCover:null);
 __v25Patch.sectionFrame=(typeof sectionFrame!=='undefined'?sectionFrame:null);
+__v25Patch.refRoot=(typeof refRoot!=='undefined'?refRoot:null);
+__v25Patch.refDetails=(typeof refDetails!=='undefined'?refDetails:null);
+__v25Patch.refMotion=(typeof refMotion!=='undefined'?refMotion:null);
+__v25Patch.refValve=(typeof refValve!=='undefined'?refValve:null);
+__v25Patch.refFuel=(typeof refFuel!=='undefined'?refFuel:null);
+__v25Patch.refGas=(typeof refGas!=='undefined'?refGas:null);
+__v25Patch.refCrank=(typeof refCrank!=='undefined'?refCrank:null);
+window.__v25PatchDebug=__v25Patch;
 }
 
 function systemVisible(name){if(systemEnabled[name]===false)return false;return selectedSystem==='all'||selectedSystem===name||(name==='details'&&selectedSystem==='motion')}
 function updateVisibility(){for(const [name,g] of Object.entries(systems)){if(name==='fixed'||name==='details')g.visible=true;else g.visible=systemVisible(name)}labels.forEach(l=>l.visible=labelVisible&&(selectedSystem==='all'||l.userData.system===selectedSystem));updateCutaway()}
-function updateCutaway(){block.material=cutaway?materials.translucent:materials.cast;head.material=cutaway?materials.headGlass:materials.cast;rockerCover.material=cutaway?materials.translucent:materials.castDark;cutEdges.forEach(e=>e.visible=cutaway);systems.cooling.children.forEach(o=>{if(o.userData.jacket)o.visible=cutaway&&systemVisible('cooling')});$('#cutaway').classList.toggle('active',cutaway)}
+function updateCutaway(){block.material=cutaway?materials.translucent:materials.cast;head.material=cutaway?materials.headGlass:materials.cast;rockerCover.material=cutaway?materials.translucent:materials.castDark;cutEdges.forEach(e=>e.visible=cutaway);systems.cooling.children.forEach(o=>{if(o.userData.jacket)o.visible=cutaway&&systemVisible('cooling')});if(__v25Patch.frontCover)__v25Patch.frontCover.visible=!cutaway;if(__v25Patch.sectionFrame)__v25Patch.sectionFrame.visible=cutaway;$('#cutaway').classList.toggle('active',cutaway)}
 function updateExplode(){const a=explode/100;systems.fixed.position.set(-70*a,0,0);systems.motion.position.set(0,-20*a,0);systems.valve.position.set(0,105*a,0);systems.fuel.position.set(70*a,45*a,45*a);systems.oil.position.set(95*a,-25*a,-55*a);systems.cooling.position.set(-95*a,15*a,45*a);systems.gas.position.set(100*a,30*a,55*a);systems.details.position.set(0,55*a,0);for(const e of explodeParts)e.obj.position.copy(e.base).addScaledVector(e.vec,a);flowRoot.visible=explode<82;$('#explodeAmount').value=explode;$('#explodeTxt').textContent=Math.round(explode)+'%';$('#explode').classList.toggle('active',explode>0)}
 
 function updateMechanics(dt){
@@ -584,9 +608,9 @@ const cylStrip=$('#cylinderStrip');for(let j=0;j<4;j++){const e=document.createE
 function resize(){const r=viewport.getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix()}addEventListener('resize',resize);resize();updateVisibility();updateExplode();if(isMobileView){$('#labelToggle').classList.remove('on');setTimeout(()=>{camera.position.set(430,350,600);controls.target.set(0,275,0);camera.fov=31;camera.updateProjectionMatrix();controls.update()},90)}setTimeout(()=>{const g=document.getElementById('guide');if(g){g.style.opacity='0';setTimeout(()=>g.style.display='none',500)}},2600);
 let last=performance.now(),fpsAcc=0,fpsFrames=0,lastFps=last,lowFpsSeconds=0,lastUiUpdate=0,lastChartUpdate=0;
 function animate(now){
- requestAnimationFrame(animate);const dt=Math.min(.05,(now-last)/1000);last=now;
+ requestAnimationFrame(animate);const dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;
  if(playing)angle=(angle+dt*rpm*6/8*timeScale)%720;
- updateMechanics(dt);updateCallouts();fanGroup.rotation.x+=dt*(1.5+rpm/350)*(coolTemp()>88?1.8:.8);controls.update();if(hoverBox&&hover)hoverBox.update();
+ updateMechanics(dt);__v25Patch.updateRefEngine(dt);__v25Patch.updateV21(dt);__v25Patch.updateV22(dt);__v25Patch.updateV23(dt);updateCallouts();fanGroup.rotation.x+=dt*(1.5+rpm/350)*(coolTemp()>88?1.8:.8);controls.update();if(hoverBox&&hover)hoverBox.update();
  if(now-lastUiUpdate>100){updateReadouts();lastUiUpdate=now}
  if(now-lastChartUpdate>66){drawChart($('#pvSide'),'PV');lastChartUpdate=now}
  if(tour){const t=(now-tourStart)/1000,stage=Math.floor(t/4)%5;if(stage===0){setView('iso');explode=0}else if(stage===1){setView('front');explode=35}else if(stage===2){setView('side');explode=68}else if(stage===3){setView('top');explode=45}else{setView('iso');explode=0}updateExplode()}
