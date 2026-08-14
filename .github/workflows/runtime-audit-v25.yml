@@ -1,0 +1,48 @@
+name: Audit V25 Runtime
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/runtime-audit-v25.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decode V19 payload and audit runtime loader
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64,gzip,re
+          root=Path('diesel-engine-3d-sim')
+          enc=''.join((root/'payloads/v19'/f'seg-{i:02d}.txt').read_text().strip() for i in range(7))
+          html=gzip.decompress(base64.b64decode(enc)).decode('utf-8')
+          lines=[]
+          lines.append(f'HTML_BYTES={len(html.encode())}')
+          lines.append(f'HTML_CHARS={len(html)}')
+          lines.append(f'HAS_MIRROR_STATUS={"正在尝试可用的 Three.js 镜像源" in html}')
+          lines.append(f'HAS_THREE_GLOBAL_CHECK={"window.THREE" in html or "typeof THREE" in html}')
+          lines.append('SCRIPT_SRC_TAGS:')
+          for m in re.finditer(r'<script[^>]+src=["\']([^"\']+)["\'][^>]*>',html,re.I): lines.append('  '+m.group(1))
+          lines.append('HTTPS_URLS:')
+          for u in sorted(set(re.findall(r'https://[^"\'<>\\s)]+',html))): lines.append('  '+u)
+          for needle in ['正在尝试可用的 Three.js 镜像源','Three.js','OrbitControls','loadScript','script.src','window.THREE','typeof THREE']:
+              p=html.find(needle)
+              lines.append(f'\n=== {needle} @ {p} ===')
+              if p>=0: lines.append(html[max(0,p-1000):p+2500])
+          (root/'logs/runtime-audit-v25.txt').write_text('\n'.join(lines),encoding='utf-8')
+          PY
+      - name: Commit audit report
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diesel-engine-3d-sim/logs/runtime-audit-v25.txt
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'audit V25 inner runtime loader'
+          git push
