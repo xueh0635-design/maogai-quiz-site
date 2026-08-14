@@ -1,0 +1,35 @@
+name: Snapshot V29 Studio PBR
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/snapshot-v29-studio-pbr.yml'
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install --no-save puppeteer-core@24.16.0
+      - run: |
+          python3 -m http.server 8000 >/tmp/v29-shot-http.log 2>&1 &
+          sleep 1
+      - name: Capture untouched initial V29 state
+        shell: bash
+        run: |
+          cat > shot.mjs <<'JS'
+          import puppeteer from 'puppeteer-core';import fs from 'fs';
+          const exe=['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium','/usr/bin/chromium-browser'].find(fs.existsSync);if(!exe)throw new Error('No Chrome');
+          const browser=await puppeteer.launch({executablePath:exe,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--enable-webgl','--ignore-gpu-blocklist','--use-angle=swiftshader']});const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.stack||e.message));await page.setViewport({width:1536,height:960,deviceScaleFactor:1});
+          await page.goto('http://127.0.0.1:8000/diesel-engine-3d-sim/versions/v29-direct.html?qa=initial',{waitUntil:'domcontentloaded',timeout:30000});
+          await page.waitForFunction(()=>{let f=document.getElementById('stage'),w=f&&f.contentWindow,d=f&&f.contentDocument;for(let i=0;i<8&&d;i++){const n=d.getElementById('stage');if(!n)break;f=n;w=f.contentWindow;d=f.contentDocument}return !!(w?.__v29Debug?.studioPBR&&w?.__v25VisualDebug?.environment)}, {timeout:90000,polling:500});await new Promise(r=>setTimeout(r,1600));
+          const state=await page.evaluate(()=>{let f=document.getElementById('stage'),w=f.contentWindow,d=f.contentDocument;for(let i=0;i<8&&d;i++){const n=d.getElementById('stage');if(!n)break;f=n;w=f.contentWindow;d=f.contentDocument}return{explode:d.getElementById('explodeAmount').value,explodeActive:d.getElementById('explode').classList.contains('active'),cutaway:d.getElementById('cutaway').classList.contains('active'),pbr:w.__v25VisualDebug,v29:w.__v29Debug}});console.log('INITIAL',JSON.stringify(state));if(errors.length)throw new Error(errors.slice(0,4).join('\n'));if(state.explode!=='0'||state.explodeActive)throw new Error('Initial state unexpectedly exploded');
+          await page.screenshot({path:'/tmp/v29-studio-pbr-initial.png'});await browser.close();
+          JS
+          node shot.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v29-studio-pbr-initial
+          path: /tmp/v29-studio-pbr-initial.png
+          retention-days: 7
