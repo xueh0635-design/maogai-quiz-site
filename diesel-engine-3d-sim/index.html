@@ -94,8 +94,13 @@
             if(!old||!old.parent){console.warn('[Diesel V15] Main Crankshaft object not found');return;}
             const parent=old.parent, mat=old.material, y=old.position.y;
             const oldMeta=old.userData&&old.userData.meta?old.userData.meta:null;
+            old.visible=false;
+            try{
+              if(typeof interactives!=='undefined'){
+                for(let i=interactives.length-1;i>=0;i--){if(interactives[i]===old)interactives.splice(i,1)}
+              }
+            }catch(e){}
             parent.remove(old);
-            old.geometry?.dispose?.();
             const group=new THREE.Group();group.name='Crankshaft Main Journal Set';parent.add(group);
             const journals=[];
             const addJournal=(r,h,z,name)=>{
@@ -107,6 +112,11 @@
             addJournal(18,30,280,'Crankshaft End Journal B');
             const meta={cn:'曲轴主轴系',en:'Crankshaft Main Journals',mat:'42CrMo 模锻钢 / 调质 + 滚压 + 磨削',fn:'由分离主轴颈、曲柄臂、连杆颈和配重共同形成真实曲拐，不再使用贯穿发动机的实心圆管。',param:'5 道独立主轴颈 Ø48×34 mm（示意）；曲柄半径 52.5 mm；行程 105 mm。',state:()=>typeof rpm!=='undefined'?'旋转 '+rpm+' rpm；全局曲轴角 '+Math.round(angle)+'°':'曲轴主轴颈'};
             try{if(typeof info==='function')info(group,meta,'motion');else journals.forEach(m=>{m.userData.meta=meta;m.userData.system='motion'})}catch(e){journals.forEach(m=>{m.userData.meta=oldMeta||meta;m.userData.system='motion'})}
+            const badge=document.createElement('div');
+            badge.textContent='V15 · 曲轴几何已修正';
+            badge.style.cssText='position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:9999;padding:6px 10px;border:1px solid rgba(82,190,255,.5);border-radius:999px;background:rgba(4,13,20,.76);color:#c8efff;font:12px system-ui;pointer-events:none;backdrop-filter:blur(8px)';
+            document.body.appendChild(badge);
+            setTimeout(()=>badge.remove(),6500);
             console.info('[Diesel V15] removed incorrect 560-mm solid crank tube; installed',journals.length,'segmented journals');
           }catch(e){console.warn('V15 crankshaft geometry fix',e)}
         };
