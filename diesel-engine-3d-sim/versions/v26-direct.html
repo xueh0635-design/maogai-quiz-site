@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>直列四缸柴油机 · V26 Geometry Detail</title>
+<style>html,body,#stage{margin:0;width:100%;height:100%;border:0;background:#02070c;overflow:hidden}#boot{position:fixed;inset:0;display:grid;place-items:center;z-index:5;background:#02070c;color:#dff4ff;font:14px system-ui}</style>
+</head><body><div id="boot">正在进入 V26 · 几何精细化 + 横向工作台布局…</div><iframe id="stage" src="v25-direct.html?base=v25&v26=1" title="V26 柴油机 3D 仿真"></iframe>
+<script>
+const frame=document.getElementById('stage');
+frame.addEventListener('load',()=>setTimeout(applyV26,900));
+function applyV26(){
+ const w=frame.contentWindow,d=frame.contentDocument,T=w.THREE,p=w.__v25PatchDebug;
+ if(!T||!p||!p.refRoot){document.getElementById('boot').textContent='V26 增强层未能初始化，请刷新重试。';return}
+ const style=d.createElement('style');style.textContent=`
+ /* V26 reference-layout pass: horizontal instrument dashboard with model as primary visual */
+ #topbar{left:14px!important;right:14px!important;top:12px!important;height:54px!important;padding:0 12px!important;border-radius:10px!important}
+ .brand h1{font-size:15px!important}.brand p{display:none!important}.logo{width:31px!important;height:31px!important;border-radius:8px!important}
+ .topActions{gap:5px!important}.topActions button{padding:7px 9px!important;border-radius:8px!important;font-size:11px!important}.qualityBadge{font-size:8px!important}
+ #leftPanel{left:14px!important;top:76px!important;bottom:152px!important;width:232px!important;padding:12px!important;border-radius:10px!important}
+ #rightPanel{right:14px!important;top:76px!important;bottom:152px!important;width:244px!important;padding:12px!important;border-radius:10px!important}
+ #bottomDock{left:258px!important;right:270px!important;bottom:14px!important;min-height:124px!important;padding:11px 14px!important;border-radius:10px!important}
+ #viewport{inset:0!important;background:radial-gradient(ellipse at 50% 40%,#17293a 0%,#07111a 54%,#010407 100%)!important}
+ #guide{top:70px!important}.refCallout{font-size:11px!important;min-width:106px!important;padding:7px 9px!important}.refCallout small{font-size:9px!important}
+ .sectionTitle{font-size:10px!important;margin:3px 0 8px!important}.divider{margin:9px 0!important}.desc{font-size:10px!important;line-height:1.45!important}.phase{font-size:21px!important}
+ .metric{padding:7px 8px!important}.metric small{font-size:9px!important}.metric b{font-size:11px!important}.sliderRow{margin:7px 0!important;font-size:10px!important}.readout{padding:7px!important}.readout b{font-size:16px!important}.readout small,.readout span{font-size:9px!important}
+ .systems{gap:4px!important}.sys{padding:6px 7px!important;font-size:9px!important}.partItem{font-size:9px!important;padding:4px 5px!important}.sidePV{height:120px!important}
+ #deployBadge{font-size:9px!important;left:16px!important;bottom:10px!important}
+ @media(max-width:1180px){#leftPanel{width:210px!important}#rightPanel{width:220px!important}#bottomDock{left:232px!important;right:242px!important}}
+ @media(max-width:900px){#leftPanel,#rightPanel,#bottomDock,#topbar{width:auto!important;left:auto!important;right:auto!important}.topActions{overflow-x:auto;flex-wrap:nowrap!important}.refCallout{display:none!important}}
+ `;d.head.appendChild(style);
+ const badge=d.querySelector('.qualityBadge');if(badge)badge.textContent='V26 · GEOMETRY DETAIL · CUTAWAY';
+ const dep=d.getElementById('deployBadge');if(dep)dep.textContent='GitHub stable · v26 · GEOMETRY DETAIL · HORIZONTAL UI';
+ const scene=p.refRoot.parent,gas=p.refGas,fuel=p.refFuel,valve=p.refValve,details=p.refDetails;
+ const M={steel:new T.MeshPhysicalMaterial({color:0xd9dfe2,roughness:.12,metalness:1,clearcoat:.34,clearcoatRoughness:.1}),dark:new T.MeshPhysicalMaterial({color:0x2b3033,roughness:.42,metalness:.82}),alloy:new T.MeshPhysicalMaterial({color:0xb9c2c6,roughness:.24,metalness:.92,clearcoat:.2}),brass:new T.MeshPhysicalMaterial({color:0xb0813e,roughness:.22,metalness:.94}),iron:new T.MeshPhysicalMaterial({color:0x4b3e35,roughness:.47,metalness:.79}),red:new T.MeshPhysicalMaterial({color:0x963c32,roughness:.35,metalness:.48,clearcoat:.18}),rubber:new T.MeshStandardMaterial({color:0x050607,roughness:.95,metalness:.01})};
+ function mesh(g,m,pos=[0,0,0],rot=[0,0,0],name=''){const o=new T.Mesh(g,m);o.position.set(...pos);o.rotation.set(...rot);o.castShadow=o.receiveShadow=true;o.name=name;return o}
+ function cyl(r,h,m,pos,rot=[0,0,0],name='',seg=40){return mesh(new T.CylinderGeometry(r,r,h,seg),m,pos,rot,name)}
+ function box(x,y,z,m,pos,rot=[0,0,0],name=''){return mesh(new T.BoxGeometry(x,y,z,2,2,2),m,pos,rot,name)}
+ function tube(points,r,m,name=''){const c=new T.CatmullRomCurve3(points.map(q=>new T.Vector3(...q)));const o=mesh(new T.TubeGeometry(c,48,r,10,false),m,[0,0,0],[0,0,0],name);return o}
+ function torus(R,r,m,pos,rot=[0,0,0],name=''){return mesh(new T.TorusGeometry(R,r,12,48),m,pos,rot,name)}
+ function addMeta(o,cn,en,sys,fn){const meta={cn,en,mat:'V26 精细化教学数字样机',fn,param:'结构细节增强件',state:()=> 'V26 可视化部件'};o.userData.meta=meta;o.userData.system=sys;o.traverse(c=>{if(c.isMesh){c.userData.meta=meta;c.userData.system=sys}});return o}
+ const X=[-180,-60,60,180];
+ // DOHC top end: visible dual cam carriers, 16 followers, valve bridges and injector clamps.
+ const top=new T.Group();top.name='V26 DOHC 16V Detail';valve.add(top);
+ for(const z of [-52,52]){const shaft=cyl(8.5,610,M.dark,[0,610,z],[0,0,Math.PI/2],z<0?'Exhaust Camshaft Detail':'Intake Camshaft Detail');top.add(shaft);for(const x of X)for(const dx of [-22,22]){const l=cyl(16,18,M.dark,[x+dx,610,z],[0,0,Math.PI/2],'Cam Lobe Detail',28);l.scale.set(1,1.38,.72);top.add(l);const follower=box(24,8,20,M.steel,[x+dx,577,z*.68],[0,0,(dx<0?-1:1)*.12],'Roller Follower');top.add(follower)}}
+ for(const x of X){for(const z of [-34,34])for(const dx of [-18,18]){top.add(cyl(11,5,M.steel,[x+dx,563,z],[0,0,0],'Valve Retainer',24));top.add(cyl(3.2,78,M.steel,[x+dx,522,z],[0,0,0],'Valve Stem',20))}const clamp=box(50,9,20,M.brass,[x,583,0],[0,0,.04],'Injector Clamp Detail');fuel.add(clamp);fuel.add(cyl(6,12,M.steel,[x,590,0],[0,0,0],'Injector Clamp Bolt',16))}
+ // Common rail: end plugs, pressure sensor, four individual HP pipes and return rail.
+ const rail2=cyl(13.5,585,M.brass,[0,667,86],[0,0,Math.PI/2],'V26 Common Rail',44);fuel.add(rail2);fuel.add(cyl(18,18,M.steel,[-302,667,86],[0,0,Math.PI/2],'Rail End Plug',24),cyl(18,18,M.steel,[302,667,86],[0,0,Math.PI/2],'Rail Pressure Sensor',24));
+ for(const x of X){fuel.add(tube([[x,667,86],[x,642,76],[x+12,616,52],[x,578,12]],3.1,M.brass,'Individual High Pressure Line'));fuel.add(cyl(6.5,9,M.steel,[x,667,86],[0,0,Math.PI/2],'HP Union',16));fuel.add(tube([[x,573,-10],[x,604,-28],[x,625,-42]],2.3,M.dark,'Injector Leak-off Line'))}
+ fuel.add(tube([[-205,625,-42],[205,625,-42]],4.2,M.dark,'Injector Return Rail'));
+ // Four independent exhaust runners with flanges, stud pairs, pulse collector and turbine inlet.
+ const ex=new T.Group();ex.name='V26 Four Branch Exhaust';gas.add(ex);for(const x of X){ex.add(box(48,42,8,M.iron,[x,468,-70],[0,0,0],'Exhaust Port Flange'));for(const dx of [-16,16])ex.add(cyl(3.5,14,M.steel,[x+dx,468,-76],[Math.PI/2,0,0],'Exhaust Stud',14));ex.add(tube([[x,463,-74],[x,445,-108],[x+(x<0?-22:22),425,-146],[x*.78,405,-184]],14,M.iron,`Cylinder ${X.indexOf(x)+1} Exhaust Runner`))}
+ ex.add(tube([[-150,405,-184],[-65,395,-190],[30,397,-190],[135,408,-176],[270,420,-142]],22,M.iron,'Pulse Collector'));
+ // Turbo detail: compressor/turbine snail rings, visible shaft, wheel blades, wastegate actuator and V-band clamps.
+ const turbo=new T.Group();turbo.name='V26 Turbo Detail';turbo.position.set(350,420,-126);gas.add(turbo);turbo.add(torus(58,18,M.alloy,[0,0,0],[0,Math.PI/2,0],'Compressor Housing'));turbo.add(torus(54,20,M.iron,[78,0,0],[0,Math.PI/2,0],'Turbine Housing'));turbo.add(cyl(7,82,M.steel,[39,0,0],[0,0,Math.PI/2],'Turbo Shaft',24));for(let k=0;k<12;k++){const a=k/12*Math.PI*2;const blade=box(4,31,12,M.steel,[0,Math.cos(a)*19,Math.sin(a)*19],[a,0,.45],'Compressor Blade');turbo.add(blade)}turbo.add(torus(31,3,M.steel,[-28,0,0],[0,Math.PI/2,0],'Compressor V-band'));turbo.add(torus(32,3,M.steel,[106,0,0],[0,Math.PI/2,0],'Turbine V-band'));turbo.add(cyl(13,54,M.brass,[75,42,18],[0,0,Math.PI/2],'Wastegate Actuator',24));turbo.add(tube([[75,42,18],[94,28,8],[105,7,0]],3,M.brass,'Wastegate Rod'));
+ // Oil filter module, head, unions and rigid lubrication lines.
+ const of=new T.Group();of.name='V26 Oil Filter Module';of.position.set(302,106,145);details.add(of);of.add(cyl(30,108,M.red,[0,0,0],[0,0,0],'Full-flow Oil Filter',40));of.add(cyl(34,12,M.dark,[0,57,0],[0,0,0],'Filter Head',32));for(let k=0;k<8;k++){const a=k/8*Math.PI*2;of.add(cyl(2.3,7,M.steel,[Math.cos(a)*20,63,Math.sin(a)*20],[0,0,0],'Filter Base Port',12))}details.add(tube([[300,165,145],[246,166,132],[190,146,126],[80,120,120],[-40,105,123]],5,M.brass,'Oil Filter Feed'));details.add(tube([[300,94,145],[210,90,137],[95,91,128],[-40,96,122],[-225,112,128]],4.6,M.brass,'Main Oil Gallery Feed'));
+ // Extra machine-detail hardware: head studs, manifold clamps, timing fasteners.
+ for(let x=-300;x<=300;x+=60){details.add(cyl(3.5,13,M.steel,[x,556,112],[0,0,0],'Head Fastener',12));details.add(cyl(3.5,13,M.steel,[x,556,-112],[0,0,0],'Head Fastener',12))}
+ for(const x of X){for(const z of [-89,-64])details.add(torus(11,1.8,M.steel,[x,468,z],[Math.PI/2,0,0],'Manifold Clamp'))}
+ // Make the open section even more readable: suppress the rear wall in cutaway so all four piston/rod/crank paths read immediately.
+ const rear=[...p.refDetails.children].find(o=>o.name==='Crankcase Rear Wall');if(rear)rear.visible=false;
+ // Central presentation: enlarge model within space between compact sidebars.
+ const cam=d.querySelector('#canvas3d');cam.style.cursor='grab';cam.addEventListener('pointerdown',()=>cam.style.cursor='grabbing');addEventListener('pointerup',()=>cam.style.cursor='grab');
+ const note=d.createElement('div');note.id='v26Mode';note.textContent='V26 · 几何精细化 / 四缸剖视 / 拖拽旋转';note.style.cssText='position:absolute;top:76px;left:50%;transform:translateX(-50%);z-index:4;padding:5px 10px;border:1px solid rgba(45,172,255,.42);border-radius:999px;background:rgba(2,9,15,.68);color:#a8ddff;font:10px system-ui;pointer-events:none';d.getElementById('app').appendChild(note);
+ w.__v26Debug={ready:true,addedTop:top.children.length,addedFuel:fuel.children.length,addedGas:gas.children.length,openRear:rear?rear.visible===false:true,layout:'horizontal-primary-model'};
+ document.getElementById('boot').remove();
+}
+</script></body></html>
