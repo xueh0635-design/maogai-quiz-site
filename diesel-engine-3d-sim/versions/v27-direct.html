@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>直列四缸柴油机 · V27 Cutaway Geometry</title>
 <style>html,body,#stage{margin:0;width:100%;height:100%;border:0;background:#02070c;overflow:hidden}#boot{position:fixed;inset:0;display:grid;place-items:center;z-index:5;background:#02070c;color:#dff4ff;font:14px system-ui}</style>
-</head><body><div id="boot">正在进入 V27 · 几何精细化 + 默认剖视可读性…</div><iframe id="stage" src="v26-direct.html?v27base=1&pbr=v29pbr2" title="V27 柴油机 3D 仿真"></iframe>
+</head><body><div id="boot">正在进入 V27 · 几何精细化 + 默认剖视可读性…</div><iframe id="stage" src="v26-direct.html?v27base=1&pbr=v29mat2" title="V27 柴油机 3D 仿真"></iframe>
 <script>
 const outer=document.getElementById('stage');
 outer.addEventListener('load',()=>setTimeout(applyV27,1800));
@@ -24,7 +24,7 @@ function applyV27(){
  const badge=d.querySelector('.qualityBadge');if(badge)badge.textContent='V27 · CUTAWAY GEOMETRY · 4-CYL';
  const dep=d.getElementById('deployBadge');if(dep)dep.textContent='GitHub stable · v27 · GEOMETRY FIRST · OPEN CUTAWAY';
  const scene=p.refRoot.parent,details=p.refDetails,motion=p.refMotion,valve=p.refValve,fuel=p.refFuel,gas=p.refGas;
- const M={steel:new T.MeshPhysicalMaterial({color:0xdce2e5,roughness:.1,metalness:1,clearcoat:.36,clearcoatRoughness:.08}),dark:new T.MeshPhysicalMaterial({color:0x292e32,roughness:.4,metalness:.86}),alloy:new T.MeshPhysicalMaterial({color:0xbfc8cc,roughness:.22,metalness:.93,clearcoat:.22}),brass:new T.MeshPhysicalMaterial({color:0xb3823f,roughness:.2,metalness:.95}),iron:new T.MeshPhysicalMaterial({color:0x4a3b33,roughness:.5,metalness:.78}),red:new T.MeshPhysicalMaterial({color:0x963c33,roughness:.34,metalness:.5,clearcoat:.18}),rubber:new T.MeshStandardMaterial({color:0x050607,roughness:.95,metalness:.01}),section:new T.MeshBasicMaterial({color:0xff3b30,transparent:true,opacity:.92,depthTest:false})};
+ const M={steel:new T.MeshPhysicalMaterial({color:0xd4dade,roughness:.10,metalness:1,clearcoat:.36,clearcoatRoughness:.08,envMapIntensity:1.60}),dark:new T.MeshPhysicalMaterial({color:0x1a2024,roughness:.50,metalness:.70,envMapIntensity:.72}),alloy:new T.MeshPhysicalMaterial({color:0x96a1a7,roughness:.30,metalness:.84,clearcoat:.16,clearcoatRoughness:.28,envMapIntensity:1.06}),brass:new T.MeshPhysicalMaterial({color:0xc08a3d,roughness:.20,metalness:.96,envMapIntensity:1.34}),iron:new T.MeshPhysicalMaterial({color:0x3b3430,roughness:.54,metalness:.66,envMapIntensity:.72}),red:new T.MeshPhysicalMaterial({color:0x7d2924,roughness:.46,metalness:.32,clearcoat:.08,envMapIntensity:.56}),rubber:new T.MeshStandardMaterial({color:0x040607,roughness:.96,metalness:.01,envMapIntensity:.08}),section:new T.MeshPhysicalMaterial({color:0x8e1813,roughness:.50,metalness:.24,clearcoat:.06,transparent:true,opacity:.82,depthTest:false,envMapIntensity:.45})};
  function mesh(g,m,pos=[0,0,0],rot=[0,0,0],name=''){const o=new T.Mesh(g,m);o.position.set(...pos);o.rotation.set(...rot);o.castShadow=o.receiveShadow=true;o.name=name;return o}
  function cyl(r,h,m,pos,rot=[0,0,0],name='',seg=40){return mesh(new T.CylinderGeometry(r,r,h,seg),m,pos,rot,name)}
  function box(x,y,z,m,pos,rot=[0,0,0],name=''){return mesh(new T.BoxGeometry(x,y,z,2,2,2),m,pos,rot,name)}
@@ -32,7 +32,7 @@ function applyV27(){
  function torus(R,r,m,pos,rot=[0,0,0],name=''){return mesh(new T.TorusGeometry(R,r,12,52),m,pos,rot,name)}
  const X=[-180,-60,60,180];
  // Open the cylinder wall visually: liners become glass-like only in the presentation model, while pistons stay opaque.
- details.traverse(o=>{if(!o.isMesh)return;if(o.name==='Cylinder Liner'){const mm=o.material.clone();mm.transparent=true;mm.opacity=.10;mm.depthWrite=false;mm.roughness=.18;mm.metalness=.18;o.material=mm}if(o.name==='Cylinder Bore')o.visible=false;if(['Crankcase Rear Wall','Crankcase Front Cover'].includes(o.name))o.visible=false});
+ details.traverse(o=>{if(!o.isMesh)return;if(o.name==='Cylinder Liner'){const mm=o.material.clone();mm.color.setHex(0x59666e);mm.transparent=true;mm.opacity=.20;mm.depthWrite=false;mm.roughness=.30;mm.metalness=.62;mm.envMapIntensity=.62;o.material=mm}if(o.name==='Cylinder Bore')o.visible=false;if(['Crankcase Rear Wall','Crankcase Front Cover'].includes(o.name))o.visible=false});
  // Add explicit red section lips at deck and crankcase opening so the cut reads as a mechanical section, not accidental transparency.
  const sec=new T.Group();sec.name='V27 Section Edges';scene.add(sec);
  for(const z of [-126,126]){const e=box(650,4,5,M.section,[0,440,z],[0,0,0],'Deck Section Edge');e.renderOrder=7;sec.add(e)}

@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>直列四缸柴油机 · V28 True Section Geometry</title>
 <style>html,body,#stage{margin:0;width:100%;height:100%;border:0;background:#02070c;overflow:hidden}#boot{position:fixed;inset:0;display:grid;place-items:center;z-index:8;background:#02070c;color:#dff4ff;font:14px system-ui}</style>
-</head><body><div id="boot">正在进入 V28 · 实体半壳剖切 + 内部机械细节…</div><iframe id="stage" src="v27-direct.html?v28base=1&pbr=v29pbr2" title="V28 柴油机 3D 仿真"></iframe>
+</head><body><div id="boot">正在进入 V28 · 实体半壳剖切 + 内部机械细节…</div><iframe id="stage" src="v27-direct.html?v28base=1&pbr=v29mat2" title="V28 柴油机 3D 仿真"></iframe>
 <script>
 const outer=document.getElementById('stage');
 outer.addEventListener('load',()=>setTimeout(applyV28,2600));
@@ -23,7 +23,7 @@ function applyV28(){
  const badge=d.querySelector('.qualityBadge');if(badge)badge.textContent='V28 · TRUE SECTION · 4-CYL INTERNALS';
  const dep=d.getElementById('deployBadge');if(dep)dep.textContent='GitHub stable · v28 · TRUE HALF-SHELL CUTAWAY · GEOMETRY FIRST';
  const scene=p.refRoot.parent,details=p.refDetails,motion=p.refMotion,valve=p.refValve,fuel=p.refFuel,gas=p.refGas;
- const M={cast:new T.MeshPhysicalMaterial({color:0x555d62,roughness:.43,metalness:.78,clearcoat:.08}),dark:new T.MeshPhysicalMaterial({color:0x24292d,roughness:.44,metalness:.84}),steel:new T.MeshPhysicalMaterial({color:0xdde3e6,roughness:.09,metalness:1,clearcoat:.38,clearcoatRoughness:.08}),alloy:new T.MeshPhysicalMaterial({color:0xbfc7ca,roughness:.22,metalness:.92,clearcoat:.2}),brass:new T.MeshPhysicalMaterial({color:0xb38442,roughness:.2,metalness:.95}),bronze:new T.MeshPhysicalMaterial({color:0x9b6f39,roughness:.27,metalness:.9}),section:new T.MeshBasicMaterial({color:0xff392e,transparent:true,opacity:.96,depthTest:false})};
+ const M={cast:new T.MeshPhysicalMaterial({color:0x505b61,roughness:.48,metalness:.64,clearcoat:.06,clearcoatRoughness:.52,envMapIntensity:.80}),dark:new T.MeshPhysicalMaterial({color:0x171d21,roughness:.56,metalness:.62,envMapIntensity:.62}),steel:new T.MeshPhysicalMaterial({color:0xdde3e6,roughness:.085,metalness:1,clearcoat:.38,clearcoatRoughness:.08,envMapIntensity:1.70}),alloy:new T.MeshPhysicalMaterial({color:0x939ea4,roughness:.31,metalness:.82,clearcoat:.15,clearcoatRoughness:.29,envMapIntensity:1.04}),brass:new T.MeshPhysicalMaterial({color:0xc08a3d,roughness:.20,metalness:.96,envMapIntensity:1.34}),bronze:new T.MeshPhysicalMaterial({color:0x9f7036,roughness:.29,metalness:.86,envMapIntensity:1.02}),section:new T.MeshPhysicalMaterial({color:0x941710,roughness:.48,metalness:.28,clearcoat:.07,transparent:true,opacity:.88,depthTest:false,envMapIntensity:.48})};
  function mesh(g,m,pos=[0,0,0],rot=[0,0,0],name=''){const o=new T.Mesh(g,m);o.position.set(...pos);o.rotation.set(...rot);o.castShadow=o.receiveShadow=true;o.name=name;return o}
  function box(x,y,z,m,pos,rot=[0,0,0],name=''){return mesh(new T.BoxGeometry(x,y,z,2,2,2),m,pos,rot,name)}
  function cyl(r,h,m,pos,rot=[0,0,0],name='',seg=44){return mesh(new T.CylinderGeometry(r,r,h,seg),m,pos,rot,name)}
@@ -31,8 +31,8 @@ function applyV28(){
  function tube(points,r,m,name=''){const c=new T.CatmullRomCurve3(points.map(v=>new T.Vector3(...v)));return mesh(new T.TubeGeometry(c,56,r,10,false),m,[0,0,0],[0,0,0],name)}
  const X=[-180,-60,60,180];
  // Replace visually closed castings with an explicit front-open half-shell. Rear material remains as a real wall behind the mechanism.
- details.traverse(o=>{if(!o.isMesh)return;if(['Cylinder Deck','Cylinder Head','Oil Sump','Cam Carrier','Crankcase Front Cover','Crankcase Rear Wall'].includes(o.name))o.visible=false;if(o.name==='Cylinder Liner'){o.material.transparent=true;o.material.opacity=.075;o.material.depthWrite=false}});
- const shell=new T.Group();shell.name='V28 True Half Shell';scene.add(shell);
+ details.traverse(o=>{if(!o.isMesh)return;if(['Cylinder Deck','Cylinder Head','Oil Sump','Cam Carrier','Crankcase Front Cover','Crankcase Rear Wall'].includes(o.name))o.visible=false;if(o.name==='Cylinder Liner'){o.material.color.setHex(0x56636b);o.material.transparent=true;o.material.opacity=.18;o.material.depthWrite=false;o.material.roughness=.30;o.material.metalness=.62;o.material.envMapIntensity=.60}});for(const o of details.children){if(o.isLineSegments)o.visible=false}
+ const shell=new T.Group();shell.name='V28 True Half Shell';scene.add(shell);w.__v28MaterialDebug={cohesivePBR:true,staleOutlineVisible:details.children.filter(o=>o.isLineSegments&&o.visible).length,sectionMaterial:'physical'};
  // Rear crankcase wall, side cheeks, deck rails and lower sump rails: all leave the +Z face physically open.
  shell.add(box(620,350,28,M.cast,[0,250,-130],[0,0,0],'Rear Crankcase Half Wall'));
  shell.add(box(46,350,245,M.cast,[-310,250,-7],[0,0,0],'LH Section Cheek'),box(46,350,245,M.cast,[310,250,-7],[0,0,0],'RH Section Cheek'));
