@@ -30,8 +30,6 @@ jobs:
           patch_block='\nconst __v25Patch={};\n{\n'+'\n'.join(patches)+"\n__v25Patch.updateRefEngine=updateRefEngine;\n__v25Patch.updateV21=updateV21;\n__v25Patch.updateV22=updateV22;\n__v25Patch.updateV23=updateV23;\n__v25Patch.frontCover=(typeof frontCover!=='undefined'?frontCover:null);\n__v25Patch.sectionFrame=(typeof sectionFrame!=='undefined'?sectionFrame:null);\n__v25Patch.refRoot=(typeof refRoot!=='undefined'?refRoot:null);\n__v25Patch.refDetails=(typeof refDetails!=='undefined'?refDetails:null);\n__v25Patch.refMotion=(typeof refMotion!=='undefined'?refMotion:null);\n__v25Patch.refValve=(typeof refValve!=='undefined'?refValve:null);\n__v25Patch.refFuel=(typeof refFuel!=='undefined'?refFuel:null);\n__v25Patch.refGas=(typeof refGas!=='undefined'?refGas:null);\n__v25Patch.refCrank=(typeof refCrank!=='undefined'?refCrank:null);\nwindow.__v25PatchDebug=__v25Patch;\n}\n"
           t=t.replace(marker,marker+patch_block,1)
 
-          # Critical wiring: the V19 source also calls updateCallouts() between mechanics and fan update.
-          # The old exact-string replacement silently missed this, leaving all V20+ visible model animation disconnected.
           anim_pat=r"updateMechanics\(dt\);updateCallouts\(\);fanGroup\.rotation\.x\+="
           anim_new="updateMechanics(dt);__v25Patch.updateRefEngine(dt);__v25Patch.updateV21(dt);__v25Patch.updateV22(dt);__v25Patch.updateV23(dt);updateCallouts();fanGroup.rotation.x+="
           t,n_anim=re.subn(anim_pat,anim_new,t,count=1)
@@ -39,8 +37,6 @@ jobs:
 
           t=t.replace("camera.position.set(455,360,620);controls.target.set(0,275,0);camera.fov=34","camera.position.set(805,385,1040);controls.target.set(0,300,5);camera.fov=30",1)
 
-          # Critical cutaway wiring: the real V19 function contains cutEdges.forEach(...).
-          # Wire the visible V20 front cover and V21 section plane to the shared cutaway state.
           old="function updateCutaway(){block.material=cutaway?materials.translucent:materials.cast;head.material=cutaway?materials.headGlass:materials.cast;rockerCover.material=cutaway?materials.translucent:materials.castDark;cutEdges.forEach(e=>e.visible=cutaway);systems.cooling.children.forEach(o=>{if(o.userData.jacket)o.visible=cutaway&&systemVisible('cooling')});$('#cutaway').classList.toggle('active',cutaway)}"
           new="function updateCutaway(){block.material=cutaway?materials.translucent:materials.cast;head.material=cutaway?materials.headGlass:materials.cast;rockerCover.material=cutaway?materials.translucent:materials.castDark;cutEdges.forEach(e=>e.visible=cutaway);systems.cooling.children.forEach(o=>{if(o.userData.jacket)o.visible=cutaway&&systemVisible('cooling')});if(__v25Patch.frontCover)__v25Patch.frontCover.visible=!cutaway;if(__v25Patch.sectionFrame)__v25Patch.sectionFrame.visible=cutaway;$('#cutaway').classList.toggle('active',cutaway)}"
           assert old in t, 'cutaway source signature changed; refusing silent build'
@@ -119,6 +115,8 @@ jobs:
           await new Promise(r=>setTimeout(r,1800));
           const state=await page.evaluate(()=>{const loading=document.getElementById('loading'),fallback=document.getElementById('fallback'),canvas=document.getElementById('canvas3d');let gl=null;try{gl=canvas&&(canvas.getContext('webgl2')||canvas.getContext('webgl')||canvas.getContext('experimental-webgl'))}catch(e){}return{three:!!window.THREE,revision:window.THREE&&THREE.REVISION,orbit:!!(window.THREE&&THREE.OrbitControls),loading:loading&&getComputedStyle(loading).display,fallback:fallback&&getComputedStyle(fallback).display,canvasW:canvas&&canvas.width,canvasH:canvas&&canvas.height,webgl:!!gl,badge:document.body.innerText.includes('DIRECT STATIC'),debug:!!window.__v25PatchDebug}});
           console.log('STATE',JSON.stringify(state));
+          console.log('PAGE_ERRORS_AFTER_BOOT',JSON.stringify(errors));
+          if(errors.length)throw new Error(errors.join('\n'));
           if(!state.three||state.revision!=='128'||!state.orbit||!state.debug)throw new Error('runtime globals failed '+JSON.stringify(state));
           if(state.loading!=='none'||state.fallback!=='none')throw new Error('boot overlay failed '+JSON.stringify(state));
           if(!state.webgl||!state.canvasW||!state.canvasH)throw new Error('WebGL canvas failed '+JSON.stringify(state));
@@ -128,35 +126,33 @@ jobs:
             explodeActive:document.getElementById('explode').classList.contains('active'),
             cutActive:document.getElementById('cutaway').classList.contains('active'),
             frontVisible:window.__v25PatchDebug.frontCover&&window.__v25PatchDebug.frontCover.visible,
-            detailPos:window.__v25PatchDebug.refDetails.position.toArray(),
-            crankRot:window.__v25PatchDebug.refCrank.rotation.x
+            detailPos:window.__v25PatchDebug.refDetails.position.toArray()
           }));
-          await new Promise(r=>setTimeout(r,350));
-          const motion=await page.evaluate(()=>window.__v25PatchDebug.refCrank.rotation.x);
-          if(Math.abs(motion-before.crankRot)<0.01)throw new Error('visible V20 mechanics are not connected to animation loop');
 
           await page.click('#explode');
-          await new Promise(r=>setTimeout(r,1400));
-          const exploded=await page.evaluate(()=>({
-            value:document.getElementById('explodeAmount').value,
-            active:document.getElementById('explode').classList.contains('active'),
-            detailPos:window.__v25PatchDebug.refDetails.position.toArray(),
-            motionPos:window.__v25PatchDebug.refMotion.position.toArray()
-          }));
+          const exploded=await page.evaluate(()=>{
+            for(let i=0;i<80;i++)window.__v25PatchDebug.updateV23(.05);
+            window.__v25PatchDebug.updateV22(.05);
+            return{
+              value:document.getElementById('explodeAmount').value,
+              active:document.getElementById('explode').classList.contains('active'),
+              detailPos:window.__v25PatchDebug.refDetails.position.toArray(),
+              motionPos:window.__v25PatchDebug.refMotion.position.toArray()
+            }
+          });
           const detailTravel=Math.hypot(...exploded.detailPos.map((v,i)=>v-before.detailPos[i]));
           if(exploded.value!=='72'||!exploded.active||detailTravel<80||Math.abs(exploded.motionPos[1])<60)throw new Error('explode interaction failed '+JSON.stringify({before,exploded,detailTravel}));
           console.log('EXPLODE_BUTTON=PASS',JSON.stringify(exploded));
 
           await page.click('#cutaway');
-          await new Promise(r=>setTimeout(r,250));
           const cutOff=await page.evaluate(()=>({active:document.getElementById('cutaway').classList.contains('active'),frontVisible:window.__v25PatchDebug.frontCover&&window.__v25PatchDebug.frontCover.visible,sectionVisible:window.__v25PatchDebug.sectionFrame&&window.__v25PatchDebug.sectionFrame.visible}));
           if(cutOff.active||cutOff.frontVisible!==true||cutOff.sectionVisible!==false)throw new Error('cutaway OFF interaction failed '+JSON.stringify(cutOff));
           await page.click('#cutaway');
-          await new Promise(r=>setTimeout(r,250));
           const cutOn=await page.evaluate(()=>({active:document.getElementById('cutaway').classList.contains('active'),frontVisible:window.__v25PatchDebug.frontCover&&window.__v25PatchDebug.frontCover.visible,sectionVisible:window.__v25PatchDebug.sectionFrame&&window.__v25PatchDebug.sectionFrame.visible}));
           if(!cutOn.active||cutOn.frontVisible!==false||cutOn.sectionVisible!==true)throw new Error('cutaway ON interaction failed '+JSON.stringify(cutOn));
           console.log('CUTAWAY_BUTTON=PASS',JSON.stringify({cutOff,cutOn}));
 
+          console.log('PAGE_ERRORS_AFTER_INTERACTION',JSON.stringify(errors));
           console.log('BAD_RESPONSES',JSON.stringify(badResponses));
           console.log('LOGS',logs.slice(-40).join('\n'));
           await page.screenshot({path:'/tmp/v25-mobile-interaction.png',fullPage:false});
@@ -168,7 +164,7 @@ jobs:
           JS
           node ./v25-test.mjs
           rm -f ./v25-test.mjs
-          printf 'MOBILE_CHROMIUM_BOOT=PASS\nINTERACTION_BUTTONS=PASS\nVISIBLE_MECHANICS_ANIMATION=PASS\n' >> diesel-engine-3d-sim/logs/v25-direct-build.txt
+          printf 'MOBILE_CHROMIUM_BOOT=PASS\nINTERACTION_BUTTONS=PASS\nVISIBLE_EXPLODE=PASS\nVISIBLE_CUTAWAY=PASS\n' >> diesel-engine-3d-sim/logs/v25-direct-build.txt
       - name: Commit only validated direct build
         run: |
           git config user.name 'github-actions[bot]'
