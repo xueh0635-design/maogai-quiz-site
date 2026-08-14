@@ -3,20 +3,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>四冲程柴油机 3D 仿真 · V13</title>
+  <title>四冲程柴油机 3D 仿真 · V14</title>
   <style>
     html,body,#frame{margin:0;width:100%;height:100%;border:0;background:#03070b}
     #msg{position:fixed;inset:0;display:grid;place-items:center;color:#eef7ff;font:14px system-ui;text-align:center;background:#03070b;z-index:2}
   </style>
 </head>
 <body>
-<div id="msg">正在载入柴油机 3D 仿真 v13 · Geometry Hotfix…</div>
+<div id="msg">正在载入柴油机 3D 仿真 v14 · Mechanical Coherence…</div>
 <iframe id="frame" title="四冲程柴油机 3D 仿真"></iframe>
 <script>
 (async()=>{
   try{
     const requested=new URLSearchParams(location.search).get('version');
-    const target=requested==='v12'?'v12':'v13';
+    if(requested==='v13'){
+      location.replace('versions/v13.html');
+      return;
+    }
+    const target=requested==='v12'?'v12':'v14';
     const names=['part-00.txt','part-01.txt','part-02.txt','part-03.txt','part-04.txt','part-05.txt'];
     const parts=[];
     for(const n of names){
@@ -29,133 +33,63 @@
     if(!window.DecompressionStream) throw new Error('浏览器版本过旧，不支持 gzip 解压');
     let text=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
 
-    /* Hotfix applies to both v12 compatibility mode and default v13.
-       It removes the visually dominant, mechanically invalid thick horizontal shaft
-       running through the middle of the engine, while preserving the lower crankshaft
-       and the thin fuel/valvetrain rails. */
-    const cleanupPatch=`<script>(()=>{
-      const apply=()=>{
-        try{
-          if(typeof THREE==='undefined'||typeof scene==='undefined') return setTimeout(apply,120);
-          const boxInfo=(o)=>{const b=new THREE.Box3().setFromObject(o),s=new THREE.Vector3(),c=new THREE.Vector3();b.getSize(s);b.getCenter(c);return {b,s,c}};
-          const meshes=[];
-          scene.traverse(o=>{if(o&&o.isMesh&&o.geometry) meshes.push(o)});
-          const candidates=[];
-          for(const o of meshes){
-            try{
-              const gp=o.geometry&&o.geometry.parameters?o.geometry.parameters:{};
-              const gt=String(o.geometry&&o.geometry.type||'');
-              if(!gt.toLowerCase().includes('cylinder')) continue;
-              const m=boxInfo(o);
-              const radius=Math.max(Number(gp.radiusTop||0),Number(gp.radiusBottom||0),Number(gp.radius||0));
-              const height=Number(gp.height||0);
-              const horizontalSpan=Math.max(m.s.x,m.s.z);
-              const horizontal=horizontalSpan>220&&m.s.y<135;
-              const middleBand=m.c.y>145&&m.c.y<345&&Math.abs(m.c.z)<190;
-              const thickLong=(height>220&&radius>=14)||(horizontalSpan>260&&Math.max(m.s.y,Math.min(m.s.x,m.s.z))>=28);
-              if(horizontal&&middleBand&&thickLong) candidates.push({o,m});
-            }catch(e){}
-          }
-          const hidden=new Set();
-          for(const item of candidates){
-            const o=item.o,m=item.m;
-            let target=o;
-            let p=o.parent;
-            for(let depth=0;depth<3&&p&&p!==scene;depth++,p=p.parent){
-              try{
-                const q=boxInfo(p);
-                const compactCarrier=Math.max(q.s.x,q.s.z)>=Math.max(m.s.x,m.s.z)*.82&&q.s.y<155&&Math.min(q.s.x,q.s.z)<205&&q.c.y>140&&q.c.y<350;
-                if(compactCarrier){target=p;break;}
-              }catch(e){}
-            }
-            target.visible=false;
-            hidden.add(target);
-            if(target===o&&o.parent){
-              o.parent.traverse(sib=>{
-                if(!sib||!sib.isMesh||sib===o||!sib.geometry) return;
-                try{
-                  const gt=String(sib.geometry.type||'').toLowerCase();
-                  if(!gt.includes('cylinder')) return;
-                  const q=boxInfo(sib);
-                  const nearAxis=Math.abs(q.c.y-m.c.y)<48&&Math.abs(q.c.z-m.c.z)<62;
-                  const bossLike=Math.max(q.s.x,q.s.z)<115&&q.s.y<115&&Math.max(q.s.y,Math.min(q.s.x,q.s.z))>24;
-                  if(nearAxis&&bossLike){sib.visible=false;hidden.add(sib);}
-                }catch(e){}
-              });
-            }
-          }
-          console.info('[Diesel 3D hotfix] removed invalid center-shaft objects:',hidden.size);
-          const badge=document.createElement('div');
-          badge.textContent='Geometry hotfix · center shaft corrected';
-          badge.style.cssText='position:fixed;left:18px;bottom:18px;z-index:31;padding:8px 11px;border:1px solid #287bb0;border-radius:12px;background:rgba(4,13,20,.82);color:#bfe9ff;font:12px system-ui;pointer-events:none';
-          document.body.appendChild(badge);
-        }catch(e){console.warn('center-shaft hotfix',e)}
-      };
-      setTimeout(apply,100);
-    })()<\/script>`;
-    text=text.replace('</body>',cleanupPatch+'</body>');
+    if(target==='v14'){
+      text=text.replaceAll('v12','v14').replaceAll('V12','V14');
+      text=text.replace('GitHub stable · v14 · BALANCED PBR','GitHub stable · v14 · MECHANICAL COHERENCE');
 
-    if(target==='v13'){
-      text=text.replaceAll('v12','v13').replaceAll('V12','V13').replace('GitHub stable · v13 · BALANCED PBR','GitHub stable · v13 · REFERENCE GEOMETRY · DOHC CORRECTED');
+      /* V14: keep the proven V12 kinematics / flow / charts intact.
+         Only remove the mechanically invalid thick transverse shaft seen in the
+         mid-height cylinder/rod region.  Do NOT add another valvetrain architecture
+         on top of the existing model; V13 remains preserved as a historical version. */
       const patch=`<script>(()=>{
         const apply=()=>{
           try{
             if(typeof THREE==='undefined'||typeof scene==='undefined') return setTimeout(apply,120);
-            const root=new THREE.Group();root.name='V13_REFERENCE_GEOMETRY';scene.add(root);
-            const mat={
-              steel:new THREE.MeshStandardMaterial({color:0xcfd7dc,metalness:.9,roughness:.23}),
-              dark:new THREE.MeshStandardMaterial({color:0x343b41,metalness:.82,roughness:.32}),
-              cast:new THREE.MeshStandardMaterial({color:0x748796,metalness:.48,roughness:.52}),
-              bronze:new THREE.MeshStandardMaterial({color:0xb38a43,metalness:.76,roughness:.28}),
-              black:new THREE.MeshStandardMaterial({color:0x15191d,metalness:.72,roughness:.36})
-            };
-            const add=(g,m,x,y,z,rx=0,ry=0,rz=0)=>{m.position.set(x,y,z);m.rotation.set(rx,ry,rz);m.castShadow=true;m.receiveShadow=true;g.add(m);return m};
-            const cyl=(r,h,ma,x,y,z,rx=0,ry=0,rz=0,seg=28)=>add(root,new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,seg),ma),x,y,z,rx,ry,rz);
-            const box=(sx,sy,sz,ma,x,y,z)=>add(root,new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),ma),x,y,z);
-            /* Remove long vertical pillar/pushrod geometry incompatible with the corrected DOHC head. */
+            const info=o=>{const b=new THREE.Box3().setFromObject(o),s=new THREE.Vector3(),c=new THREE.Vector3();b.getSize(s);b.getCenter(c);return{s,c}};
+            const hidden=[];
+            const shafts=[];
             scene.traverse(o=>{
-              if(!o.isMesh||o.parent===root||!o.geometry)return;
+              if(!o?.isMesh||!o.geometry)return;
               try{
-                const b=new THREE.Box3().setFromObject(o),s=new THREE.Vector3();b.getSize(s);
-                const c=new THREE.Vector3();b.getCenter(c);
-                if(c.y>275&&s.y>165&&s.x<34&&s.z<34&&s.y>6*Math.max(s.x,s.z))o.visible=false;
+                const type=String(o.geometry.type||'').toLowerCase();
+                if(!type.includes('cylinder'))return;
+                const {s,c}=info(o),gp=o.geometry.parameters||{};
+                const radius=Math.max(Number(gp.radiusTop||0),Number(gp.radiusBottom||0),Number(gp.radius||0));
+                const h=Number(gp.height||0);
+                /* Exact defect signature from the user screenshot:
+                   long left-right cylinder, thick section, central Z band,
+                   above crankcase and below the head. */
+                const invalidCenterShaft=
+                  s.x>320 && s.y<120 && s.z<120 &&
+                  c.y>175 && c.y<325 && Math.abs(c.z)<95 &&
+                  h>280 && radius>=18;
+                if(invalidCenterShaft)shafts.push({o,s,c});
               }catch(e){}
             });
-            box(570,62,150,mat.cast,0,410,0);
-            box(540,26,126,mat.dark,0,456,0);
-            [-43,43].forEach(z=>{
-              cyl(12,545,mat.dark,0,490,z,0,0,Math.PI/2,32);
-              [-195,-65,65,195].forEach((x,i)=>{
-                cyl(21,12,mat.steel,x,490,z,Math.PI/2,0,0,24);
-                const l=new THREE.Mesh(new THREE.BoxGeometry(44,16,25),mat.dark);l.rotation.z=(i%2?-.34:.34);add(root,l,x,490,z);
+            for(const q of shafts){
+              q.o.visible=false;hidden.push(q.o);
+              /* Remove only boss/disc cylinders sharing the same erroneous axis.
+                 This avoids leaving the floating collars that were visible around it. */
+              if(q.o.parent)q.o.parent.traverse(sib=>{
+                if(!sib?.isMesh||sib===q.o||!sib.geometry)return;
+                try{
+                  if(!String(sib.geometry.type||'').toLowerCase().includes('cylinder'))return;
+                  const z=info(sib);
+                  const sameAxis=Math.abs(z.c.y-q.c.y)<38&&Math.abs(z.c.z-q.c.z)<45;
+                  const collar=z.s.x<125&&z.s.y<110&&z.s.z<110&&Math.max(z.s.y,z.s.z)>24;
+                  const withinSpan=Math.abs(z.c.x-q.c.x)<q.s.x*.58;
+                  if(sameAxis&&collar&&withinSpan){sib.visible=false;hidden.push(sib)}
+                }catch(e){}
               });
-            });
-            [-195,-65,65,195].forEach(x=>{
-              [-25,25].forEach(z=>[-1,1].forEach(side=>{
-                const zz=z+side*10;
-                cyl(4.2,84,mat.steel,x+side*15,393,zz);
-                for(let k=0;k<7;k++)cyl(10-k*.25,3.2,mat.steel,x+side*15,438-k*8.5,zz);
-                cyl(13,5,mat.bronze,x+side*15,455,zz);
-              }));
-            });
-            cyl(12,520,mat.bronze,0,548,-66,0,0,Math.PI/2,32);
-            [-195,-65,65,195].forEach(x=>{cyl(7,46,mat.bronze,x,522,-66);cyl(8,70,mat.dark,x,476,-66);});
-            box(500,48,44,mat.cast,0,422,-135);
-            [-195,-65,65,195].forEach(x=>cyl(18,88,mat.cast,x,386,-105,Math.PI/2,0,0,24));
-            cyl(16,500,mat.dark,0,350,116,0,0,Math.PI/2,24);
-            [-195,-65,65,195].forEach(x=>cyl(15,86,mat.dark,x,383,86,Math.PI/2,0,0,24));
-            [-43,43].forEach(z=>{cyl(46,16,mat.steel,-292,490,z,0,0,Math.PI/2,36);cyl(31,19,mat.dark,-292,490,z,0,0,Math.PI/2,24)});
-            for(let x=-250;x<=250;x+=50)box(10,75,150,mat.cast,x,351,0);
-            if(typeof renderer!=='undefined'){renderer.toneMappingExposure=1.18;renderer.outputColorSpace=THREE.SRGBColorSpace;}
-            scene.fog=new THREE.FogExp2(0x050b11,.00018);
-            const key2=new THREE.DirectionalLight(0xffffff,1.1);key2.position.set(260,700,780);scene.add(key2);
-            const rim2=new THREE.DirectionalLight(0x89c9ff,.55);rim2.position.set(-600,420,-500);scene.add(rim2);
-            if(typeof camera!=='undefined'){camera.fov=34;camera.updateProjectionMatrix();}
-            if(typeof controls!=='undefined'){controls.target.set(0,285,0);controls.minDistance=300;controls.maxDistance=1900;controls.update();}
-            const badge=document.createElement('div');badge.textContent='V13 · DOHC geometry corrected';badge.style.cssText='position:fixed;right:18px;bottom:18px;z-index:30;padding:8px 11px;border:1px solid #287bb0;border-radius:12px;background:rgba(4,13,20,.8);color:#bfe9ff;font:12px system-ui;pointer-events:none';document.body.appendChild(badge);
-          }catch(e){console.warn('V13 geometry patch',e)}
+            }
+            console.info('[Diesel V14] invalid center shaft candidates:',shafts.length,'hidden objects:',hidden.length);
+            /* Preserve V12 balanced lighting.  V13's extra lights and additive DOHC
+               carrier are intentionally not injected in V14. */
+            if(typeof renderer!=='undefined'&&renderer.toneMappingExposure>1.12)renderer.toneMappingExposure=1.06;
+            if(typeof camera!=='undefined'&&matchMedia('(max-width:900px)').matches){camera.fov=Math.min(camera.fov,34);camera.updateProjectionMatrix()}
+          }catch(e){console.warn('V14 mechanical coherence patch',e)}
         };
-        setTimeout(apply,180);
+        setTimeout(apply,120);
       })()<\/script>`;
       text=text.replace('</body>',patch+'</body>');
     }
