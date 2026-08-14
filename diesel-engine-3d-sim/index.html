@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>四冲程柴油机 3D 仿真 · V15</title>
+  <title>四冲程柴油机 3D 仿真 · V16</title>
   <style>
     html,body,#frame{margin:0;width:100%;height:100%;border:0;background:#03070b}
     #msg{position:fixed;inset:0;display:grid;place-items:center;color:#eef7ff;font:14px system-ui;text-align:center;background:#03070b;z-index:2}
   </style>
 </head>
 <body>
-<div id="msg">正在载入柴油机 3D 仿真 v15 · Crankshaft Geometry Fix…</div>
+<div id="msg">正在载入柴油机 3D 仿真 v16 · Camshaft Geometry Rebuild…</div>
 <iframe id="frame" title="四冲程柴油机 3D 仿真"></iframe>
 <script>
 (async()=>{
@@ -20,7 +20,7 @@
       location.replace('versions/v13.html');
       return;
     }
-    const target=requested==='v12'?'v12':requested==='v14'?'v14':'v15';
+    const target=requested==='v12'?'v12':requested==='v14'?'v14':requested==='v15'?'v15':'v16';
     const names=['part-00.txt','part-01.txt','part-02.txt','part-03.txt','part-04.txt','part-05.txt'];
     const parts=[];
     for(const n of names){
@@ -32,6 +32,23 @@
     const bytes=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));
     if(!window.DecompressionStream) throw new Error('浏览器版本过旧，不支持 gzip 解压');
     let text=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+
+    if(target==='v16'){
+      text=text.replaceAll('v12','v16').replaceAll('V12','V16');
+      text=text.replace('GitHub stable · v16 · CAMSHAFT FIX · CLEAR VIEW','GitHub stable · v16 · CAMSHAFT REBUILT · CRANKSHAFT FIX');
+
+      /* V16 modifies the decoded payload source BEFORE it executes. */
+      const crankReplacement=`const crankCore=new THREE.Group();crankCore.name='Crankshaft Main Journal Set';systems.motion.add(crankCore);for(const [jz,jr,jh] of [[-224,24,34],[-112,24,34],[0,24,34],[112,24,34],[224,24,34],[-280,18,30],[280,18,30]]){const j=cyl(jr,jh,materials.polished,[0,dims.crankY,jz],[Math.PI/2,0,0],40,'Crankshaft Journal');crankCore.add(j)}info(crankCore,{cn:'曲轴主轴系',en:'Crankshaft Main Journals',mat:'42CrMo 模锻钢 / 调质 + 滚压 + 磨削',fn:'由分离主轴颈、曲柄臂、连杆颈和配重形成真实曲拐；不再使用贯穿式实心圆管。',param:'5 道独立主轴颈；曲柄半径 52.5 mm；行程 105 mm。',state:()=> '旋转 '+rpm+' rpm；全局曲轴角 '+Math.round(angle)+'°'},'motion');\nconst flywheel=`;
+      text=text.replace(/const crankCore=[\s\S]*?\nconst flywheel=/,crankReplacement);
+
+      const camLobeReplacement=`function camLobe(z,phase=0){const sh=new THREE.Shape(),N=64,baseR=7.6,noseR=14.2;for(let i=0;i<N;i++){const a=i/N*Math.PI*2,c=Math.max(0,Math.cos(a)),r=baseR+(noseR-baseR)*Math.pow(c,3.7),x=r*Math.cos(a),y=r*Math.sin(a);i?sh.lineTo(x,y):sh.moveTo(x,y)}sh.closePath();const geo=new THREE.ExtrudeGeometry(sh,{depth:8,bevelEnabled:true,bevelSize:.5,bevelThickness:.5,bevelSegments:2,curveSegments:20});geo.translate(0,0,-4);const o=mesh(geo,materials.steelDark,[0,0,z],[0,0,phase],'Cam Lobe');o.castShadow=true;o.receiveShadow=true;return o;}\nfunction alignY`;
+      text=text.replace(/function camLobe[\s\S]*?\nfunction alignY/,camLobeReplacement);
+
+      const camReplacement=`// camshaft and timing gears — v16: compact side-mounted OHV camshaft\nconst camshaftGroup=new THREE.Group();camshaftGroup.position.set(108,240,0);camshaftGroup.name='Camshaft Assembly';systems.valve.add(camshaftGroup);\nconst camshaft=cyl(4.8,470,materials.steelDark,[0,0,0],[Math.PI/2,0,0],32,'Camshaft Core');camshaftGroup.add(camshaft);info(camshaft,{cn:'凸轮轴',en:'Camshaft',mat:'冷硬铸铁 / 凸轮磨削',fn:'以曲轴 1/2 转速驱动四缸进排气门；细轴芯位于缸体侧部凸轮轴孔内。',param:'细轴芯 Ø9.6 mm（视觉比例）+ 8 个桃形凸轮 + 5 道轴颈；明确区别于贯穿式粗圆管。',state:()=> '转速 '+(rpm/2).toFixed(0)+' rpm；相位 '+((angle/2)%360).toFixed(0)+'°'},'valve');\nfor(const jz of [-224,-112,0,112,224])camshaftGroup.add(cyl(7.2,12,materials.polished,[0,0,jz],[Math.PI/2,0,0],28,'Cam Journal'));\nconst crankGear=`;
+      text=text.replace(/\/\/ camshaft and timing gears[\s\S]*?\nconst crankGear=/,camReplacement);
+
+      text=text.replace('</body>',`<div style="position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:9999;padding:5px 10px;border:1px solid rgba(82,190,255,.55);border-radius:999px;background:rgba(4,13,20,.80);color:#c8efff;font:12px system-ui;pointer-events:none">V16 · 凸轮轴已重建</div></body>`);
+    }
 
     if(target==='v14'){
       text=text.replaceAll('v12','v14').replaceAll('V12','V14');
