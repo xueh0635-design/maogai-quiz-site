@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>直列四缸柴油机 · V27 Cutaway Geometry</title>
+<style>html,body,#stage{margin:0;width:100%;height:100%;border:0;background:#02070c;overflow:hidden}#boot{position:fixed;inset:0;display:grid;place-items:center;z-index:5;background:#02070c;color:#dff4ff;font:14px system-ui}</style>
+</head><body><div id="boot">正在进入 V27 · 几何精细化 + 默认剖视可读性…</div><iframe id="stage" src="v26-direct.html?v27base=1" title="V27 柴油机 3D 仿真"></iframe>
+<script>
+const outer=document.getElementById('stage');
+outer.addEventListener('load',()=>setTimeout(applyV27,1800));
+function applyV27(){
+ const od=outer.contentDocument, inner=od&&od.getElementById('stage');
+ if(!inner){document.getElementById('boot').textContent='V27 等待基础模型…';setTimeout(applyV27,900);return}
+ const w=inner.contentWindow,d=inner.contentDocument,T=w.THREE,p=w.__v25PatchDebug;
+ if(!T||!p||!p.refRoot){document.getElementById('boot').textContent='V27 几何层正在初始化…';setTimeout(applyV27,900);return}
+ const style=d.createElement('style');style.textContent=`
+ #leftPanel{width:220px!important;bottom:148px!important}#rightPanel{width:230px!important;bottom:148px!important}
+ #bottomDock{left:246px!important;right:256px!important;min-height:120px!important}
+ #topbar{height:52px!important}.topActions button{padding:6px 8px!important}
+ #viewport{background:radial-gradient(ellipse at 50% 42%,#152a3b 0%,#07111a 55%,#010407 100%)!important}
+ #v26Mode{display:none!important}.refCallout{min-width:104px!important;max-width:148px!important}
+ @media(max-width:1180px){#leftPanel{width:200px!important}#rightPanel{width:210px!important}#bottomDock{left:224px!important;right:234px!important}}
+ `;d.head.appendChild(style);
+ const badge=d.querySelector('.qualityBadge');if(badge)badge.textContent='V27 · CUTAWAY GEOMETRY · 4-CYL';
+ const dep=d.getElementById('deployBadge');if(dep)dep.textContent='GitHub stable · v27 · GEOMETRY FIRST · OPEN CUTAWAY';
+ const scene=p.refRoot.parent,details=p.refDetails,motion=p.refMotion,valve=p.refValve,fuel=p.refFuel,gas=p.refGas;
+ const M={steel:new T.MeshPhysicalMaterial({color:0xdce2e5,roughness:.1,metalness:1,clearcoat:.36,clearcoatRoughness:.08}),dark:new T.MeshPhysicalMaterial({color:0x292e32,roughness:.4,metalness:.86}),alloy:new T.MeshPhysicalMaterial({color:0xbfc8cc,roughness:.22,metalness:.93,clearcoat:.22}),brass:new T.MeshPhysicalMaterial({color:0xb3823f,roughness:.2,metalness:.95}),iron:new T.MeshPhysicalMaterial({color:0x4a3b33,roughness:.5,metalness:.78}),red:new T.MeshPhysicalMaterial({color:0x963c33,roughness:.34,metalness:.5,clearcoat:.18}),rubber:new T.MeshStandardMaterial({color:0x050607,roughness:.95,metalness:.01}),section:new T.MeshBasicMaterial({color:0xff3b30,transparent:true,opacity:.92,depthTest:false})};
+ function mesh(g,m,pos=[0,0,0],rot=[0,0,0],name=''){const o=new T.Mesh(g,m);o.position.set(...pos);o.rotation.set(...rot);o.castShadow=o.receiveShadow=true;o.name=name;return o}
+ function cyl(r,h,m,pos,rot=[0,0,0],name='',seg=40){return mesh(new T.CylinderGeometry(r,r,h,seg),m,pos,rot,name)}
+ function box(x,y,z,m,pos,rot=[0,0,0],name=''){return mesh(new T.BoxGeometry(x,y,z,2,2,2),m,pos,rot,name)}
+ function tube(points,r,m,name=''){const c=new T.CatmullRomCurve3(points.map(q=>new T.Vector3(...q)));return mesh(new T.TubeGeometry(c,52,r,10,false),m,[0,0,0],[0,0,0],name)}
+ function torus(R,r,m,pos,rot=[0,0,0],name=''){return mesh(new T.TorusGeometry(R,r,12,52),m,pos,rot,name)}
+ const X=[-180,-60,60,180];
+ // Open the cylinder wall visually: liners become glass-like only in the presentation model, while pistons stay opaque.
+ details.traverse(o=>{if(!o.isMesh)return;if(o.name==='Cylinder Liner'){const mm=o.material.clone();mm.transparent=true;mm.opacity=.10;mm.depthWrite=false;mm.roughness=.18;mm.metalness=.18;o.material=mm}if(o.name==='Cylinder Bore')o.visible=false;if(['Crankcase Rear Wall','Crankcase Front Cover'].includes(o.name))o.visible=false});
+ // Add explicit red section lips at deck and crankcase opening so the cut reads as a mechanical section, not accidental transparency.
+ const sec=new T.Group();sec.name='V27 Section Edges';scene.add(sec);
+ for(const z of [-126,126]){const e=box(650,4,5,M.section,[0,440,z],[0,0,0],'Deck Section Edge');e.renderOrder=7;sec.add(e)}
+ for(const x of [-310,310]){const e=box(5,340,5,M.section,[x,245,126],[0,0,0],'Crankcase Section Edge');e.renderOrder=7;sec.add(e)}
+ // Four main-bearing caps + cap bolts, clearly visible beneath crankshaft.
+ for(const x of [-260,-130,0,130,260]){details.add(box(76,24,86,M.dark,[x,70,0],[0,0,0],'Main Bearing Cap'));for(const z of [-29,29])details.add(cyl(4.2,18,M.steel,[x,56,z],[0,0,0],'Main Cap Bolt',14))}
+ // Piston skirt windows, wrist-pin bosses and rod-cap bolts increase internal mechanical density.
+ for(const x of X){motion.add(torus(13,3,M.steel,[x,305,0],[Math.PI/2,0,0],'Wrist Pin Boss'));for(const z of [-13,13])motion.add(cyl(3.3,13,M.steel,[x,150,z],[Math.PI/2,0,0],'Rod Cap Bolt',12))}
+ // DOHC upper architecture: bearing caps, cam oil feed gallery and 16 visible spring/retainer stacks.
+ for(const z of [-52,52]){for(const x of [-240,-120,0,120,240]){valve.add(box(54,18,36,M.dark,[x,616,z],[0,0,0],'Cam Bearing Cap'));for(const dx of [-18,18])valve.add(cyl(3.5,13,M.steel,[x+dx,628,z],[0,0,0],'Cam Cap Bolt',12))}valve.add(tube([[-290,638,z],[-145,640,z],[0,640,z],[145,640,z],[290,638,z]],3.2,M.brass,'Cam Oil Gallery'))}
+ for(const x of X)for(const z of [-34,34])for(const dx of [-18,18]){valve.add(torus(11,1.6,M.steel,[x+dx,566,z],[Math.PI/2,0,0],'Valve Spring Seat'));valve.add(cyl(13,4,M.steel,[x+dx,570,z],[0,0,0],'Valve Retainer'))}
+ // Common-rail mounting feet, injector leak-off tees and rail pressure valve.
+ for(const x of X){fuel.add(box(26,16,58,M.dark,[x,647,82],[0,0,0],'Rail Mount'));fuel.add(tube([[x,573,-10],[x+10,595,-20],[x+18,620,-40]],2.1,M.dark,'Injector Return Hose'));fuel.add(cyl(5.5,12,M.brass,[x+18,620,-40],[Math.PI/2,0,0],'Leak-off Tee',16))}
+ fuel.add(cyl(12,34,M.brass,[318,667,86],[0,0,Math.PI/2],'Rail Pressure Control Valve',24));
+ // Exhaust: individual bell-mouth ports, paired studs, collector weld rings and a turbine inlet flange.
+ for(const x of X){gas.add(torus(20,2.4,M.steel,[x,468,-73],[Math.PI/2,0,0],'Exhaust Gasket Ring'));for(const dx of [-17,17])gas.add(cyl(3.2,16,M.steel,[x+dx,469,-82],[Math.PI/2,0,0],'Exhaust Stud',12))}
+ for(const x of [-135,-45,45,135])gas.add(torus(23,2.1,M.steel,[x,405,-184],[Math.PI/2,0,0],'Collector Weld Ring'));
+ gas.add(torus(31,3.5,M.steel,[286,420,-143],[0,Math.PI/2,0],'Turbine Inlet V-band'));
+ // Oil filtration and pipe fittings: filter can, cast head, banjo unions and rigid feed/return lines.
+ const oil=new T.Group();oil.name='V27 Oil Filter Detail';oil.position.set(300,115,148);details.add(oil);oil.add(cyl(31,112,M.red,[0,0,0],[0,0,0],'Oil Filter Can',44));oil.add(cyl(37,15,M.dark,[0,61,0],[0,0,0],'Oil Filter Head',36));oil.add(cyl(12,18,M.brass,[-33,60,0],[0,0,Math.PI/2],'Oil Inlet Union',20));oil.add(cyl(12,18,M.brass,[33,60,0],[0,0,Math.PI/2],'Oil Outlet Union',20));details.add(tube([[267,175,148],[220,165,140],[150,142,130],[50,118,122]],5,M.brass,'Oil Filter Inlet Pipe'));details.add(tube([[333,175,148],[260,188,138],[165,180,128],[85,150,122]],4.6,M.brass,'Oil Filter Outlet Pipe'));
+ // Default presentation camera: front-biased, complete engine, four cylinders centered between side panels.
+ const cam=w.__v25VisualDebug?null:null;const camera=[...scene.children].find(o=>o.isCamera)||null;
+ if(camera){camera.position.set(400,370,1620);camera.fov=30;camera.updateProjectionMatrix()}
+ const controls=(w.__v25PatchDebug&&w.__v25PatchDebug.refRoot)?(function(){let c=null;try{c=w.document.querySelector('#canvas3d')&&w.document.querySelector('#canvas3d').__controls}catch(e){}return c})():null;
+ // OrbitControls is closure-local in base page; emulate the desired target through camera look direction only when reset is pressed via existing view buttons.
+ const frontBtn=d.querySelector('[data-view="front"]');if(frontBtn)frontBtn.textContent='剖视正面';
+ const callout=d.createElement('div');callout.id='v27Mode';callout.textContent='V27 · 开放剖视：四活塞 / 四连杆 / 曲轴一眼可读';callout.style.cssText='position:absolute;top:70px;left:50%;transform:translateX(-50%);z-index:4;padding:5px 11px;border:1px solid rgba(48,173,255,.46);border-radius:999px;background:rgba(2,9,15,.72);color:#b4e4ff;font:10px system-ui;pointer-events:none';d.getElementById('app').appendChild(callout);
+ // Ensure default cutaway button visually active and geometry remains exposed.
+ const cut=d.getElementById('cutaway');if(cut&&!cut.classList.contains('active'))cut.click();
+ w.__v27Debug={ready:true,linersTransparent:true,boreHidden:true,sectionEdges:sec.children.length,mainBearingDetail:true,dohcDetail:true,fuelDetail:true,exhaustDetail:true,oilDetail:true};
+ document.getElementById('boot').remove();
+}
+</script></body></html>
