@@ -368,6 +368,8 @@ function updateCallouts(){if(isMobileView)return;const rect=viewport.getBounding
 
 const explodeParts=[];function registerExplode(obj,vec){explodeParts.push({obj,base:obj.position.clone(),vec:new THREE.Vector3(...vec)})}
 registerExplode(head,[0,170,0]);registerExplode(rockerCover,[0,280,0]);registerExplode(gasket,[0,100,0]);registerExplode(sump,[0,-190,0]);registerExplode(flyHousing,[0,0,-220]);registerExplode(flywheel,[0,0,-260]);registerExplode(ringGear,[0,0,-290]);registerExplode(timingCover,[0,0,190]);registerExplode(hpPump,[170,30,150]);registerExplode(fuelFilter,[-170,20,160]);registerExplode(rail,[110,80,40]);registerExplode(oilPump,[150,-50,140]);registerExplode(oilFilter,[190,20,-170]);registerExplode(oilCooler,[150,80,-170]);registerExplode(waterPump,[170,20,120]);registerExplode(thermostat,[100,90,-150]);registerExplode(radiator,[-250,0,0]);registerExplode(turbo,[200,60,180]);registerExplode(intercooler,[-210,0,170]);registerExplode(intakePlenum,[-130,50,0]);registerExplode(exhaustPlenum,[130,50,0]);registerExplode(starter,[120,-20,-150]);registerExplode(alternator,[-140,40,150]);registerExplode(airFilter,[-220,0,100]);
+const __v25Patch={};
+{
 // === V20 DIGITAL TWIN REBUILD ===
 root.visible=false; floor.visible=false; grid.visible=false; labelVisible=false;
 const refRoot=new THREE.Group(); refRoot.name='V20 Digital Twin Engine'; scene.add(refRoot);
@@ -530,6 +532,14 @@ function updateV23(dt){
     const targetY=300+42*v23Smoothstep(e);
     controls.target.y+=(targetY-controls.target.y)*(1-Math.exp(-3.2*dt));
   }
+}
+
+__v25Patch.updateRefEngine=updateRefEngine;
+__v25Patch.updateV21=updateV21;
+__v25Patch.updateV22=updateV22;
+__v25Patch.updateV23=updateV23;
+__v25Patch.frontCover=(typeof frontCover!=='undefined'?frontCover:null);
+__v25Patch.sectionFrame=(typeof sectionFrame!=='undefined'?sectionFrame:null);
 }
 
 function systemVisible(name){if(systemEnabled[name]===false)return false;return selectedSystem==='all'||selectedSystem===name||(name==='details'&&selectedSystem==='motion')}
