@@ -27,13 +27,25 @@ jobs:
           t=t.replace('V19','V25').replace('v19','v25')
           marker="registerExplode(airFilter,[-220,0,100]);"
           assert marker in t, 'patch marker missing'
-          patch_block='\nconst __v25Patch={};\n{\n'+'\n'.join(patches)+"\n__v25Patch.updateRefEngine=updateRefEngine;\n__v25Patch.updateV21=updateV21;\n__v25Patch.updateV22=updateV22;\n__v25Patch.updateV23=updateV23;\n__v25Patch.frontCover=(typeof frontCover!=='undefined'?frontCover:null);\n__v25Patch.sectionFrame=(typeof sectionFrame!=='undefined'?sectionFrame:null);\n}\n"
+          patch_block='\nconst __v25Patch={};\n{\n'+'\n'.join(patches)+"\n__v25Patch.updateRefEngine=updateRefEngine;\n__v25Patch.updateV21=updateV21;\n__v25Patch.updateV22=updateV22;\n__v25Patch.updateV23=updateV23;\n__v25Patch.frontCover=(typeof frontCover!=='undefined'?frontCover:null);\n__v25Patch.sectionFrame=(typeof sectionFrame!=='undefined'?sectionFrame:null);\n__v25Patch.refRoot=(typeof refRoot!=='undefined'?refRoot:null);\n__v25Patch.refDetails=(typeof refDetails!=='undefined'?refDetails:null);\n__v25Patch.refMotion=(typeof refMotion!=='undefined'?refMotion:null);\n__v25Patch.refValve=(typeof refValve!=='undefined'?refValve:null);\n__v25Patch.refFuel=(typeof refFuel!=='undefined'?refFuel:null);\n__v25Patch.refGas=(typeof refGas!=='undefined'?refGas:null);\n__v25Patch.refCrank=(typeof refCrank!=='undefined'?refCrank:null);\nwindow.__v25PatchDebug=__v25Patch;\n}\n"
           t=t.replace(marker,marker+patch_block,1)
-          t=t.replace('updateMechanics(dt);fanGroup.rotation.x+=','updateMechanics(dt);__v25Patch.updateRefEngine(dt);__v25Patch.updateV21(dt);__v25Patch.updateV22(dt);__v25Patch.updateV23(dt);fanGroup.rotation.x+=',1)
+
+          # Critical wiring: the V19 source also calls updateCallouts() between mechanics and fan update.
+          # The old exact-string replacement silently missed this, leaving all V20+ visible model animation disconnected.
+          anim_pat=r"updateMechanics\(dt\);updateCallouts\(\);fanGroup\.rotation\.x\+="
+          anim_new="updateMechanics(dt);__v25Patch.updateRefEngine(dt);__v25Patch.updateV21(dt);__v25Patch.updateV22(dt);__v25Patch.updateV23(dt);updateCallouts();fanGroup.rotation.x+="
+          t,n_anim=re.subn(anim_pat,anim_new,t,count=1)
+          assert n_anim==1, f'animate patch wiring replacement count={n_anim}'
+
           t=t.replace("camera.position.set(455,360,620);controls.target.set(0,275,0);camera.fov=34","camera.position.set(805,385,1040);controls.target.set(0,300,5);camera.fov=30",1)
-          old="function updateCutaway(){block.material=cutaway?materials.translucent:materials.cast;head.material=cutaway?materials.headGlass:materials.cast;rockerCover.material=cutaway?materials.translucent:materials.castDark;systems.cooling.children.forEach(o=>{if(o.userData.jacket)o.visible=cutaway&&systemVisible('cooling')});$('#cutaway').classList.toggle('active',cutaway)}"
-          new="function updateCutaway(){block.material=cutaway?materials.translucent:materials.cast;head.material=cutaway?materials.headGlass:materials.cast;rockerCover.material=cutaway?materials.translucent:materials.castDark;systems.cooling.children.forEach(o=>{if(o.userData.jacket)o.visible=cutaway&&systemVisible('cooling')});if(__v25Patch.frontCover)__v25Patch.frontCover.visible=!cutaway;if(__v25Patch.sectionFrame)__v25Patch.sectionFrame.visible=cutaway;$('#cutaway').classList.toggle('active',cutaway)}"
-          if old in t: t=t.replace(old,new,1)
+
+          # Critical cutaway wiring: the real V19 function contains cutEdges.forEach(...).
+          # Wire the visible V20 front cover and V21 section plane to the shared cutaway state.
+          old="function updateCutaway(){block.material=cutaway?materials.translucent:materials.cast;head.material=cutaway?materials.headGlass:materials.cast;rockerCover.material=cutaway?materials.translucent:materials.castDark;cutEdges.forEach(e=>e.visible=cutaway);systems.cooling.children.forEach(o=>{if(o.userData.jacket)o.visible=cutaway&&systemVisible('cooling')});$('#cutaway').classList.toggle('active',cutaway)}"
+          new="function updateCutaway(){block.material=cutaway?materials.translucent:materials.cast;head.material=cutaway?materials.headGlass:materials.cast;rockerCover.material=cutaway?materials.translucent:materials.castDark;cutEdges.forEach(e=>e.visible=cutaway);systems.cooling.children.forEach(o=>{if(o.userData.jacket)o.visible=cutaway&&systemVisible('cooling')});if(__v25Patch.frontCover)__v25Patch.frontCover.visible=!cutaway;if(__v25Patch.sectionFrame)__v25Patch.sectionFrame.visible=cutaway;$('#cutaway').classList.toggle('active',cutaway)}"
+          assert old in t, 'cutaway source signature changed; refusing silent build'
+          t=t.replace(old,new,1)
+
           runtime='\n<script src="../vendor/three-r128.min.js?v=128"></script>\n<script src="../vendor/OrbitControls-r128.js?v=128"></script>\n'
           t=t.replace('</head>',runtime+'</head>',1)
           pattern=r"\(function loadEngineLibraries\(\)\{.*?\n\}\)\(\);"
@@ -65,7 +77,8 @@ jobs:
           for x in forbidden: assert x not in t, f'forbidden runtime dependency remains: {x}'
           assert '../vendor/three-r128.min.js' in t
           assert '../vendor/OrbitControls-r128.js' in t
-          assert '__v25Patch.updateRefEngine' in t
+          assert '__v25Patch.updateRefEngine(dt);__v25Patch.updateV21(dt);__v25Patch.updateV22(dt);__v25Patch.updateV23(dt);' in t
+          assert 'if(__v25Patch.frontCover)__v25Patch.frontCover.visible=!cutaway' in t
           out=root/'versions/v25-direct.html'
           out.write_text(t,encoding='utf-8')
           scripts=re.findall(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>',t,re.S|re.I)
@@ -76,7 +89,7 @@ jobs:
           subprocess.run(['node','--check',str(root/'vendor/three-r128.min.js')],check=True)
           subprocess.run(['node','--check',str(root/'vendor/OrbitControls-r128.js')],check=True)
           report=root/'logs/v25-direct-build.txt'
-          report.write_text('\n'.join(['BUILD=V25_DIRECT_STATIC_SCOPE_ISOLATED',f'HTML_BYTES={len(t.encode())}','CLIENT_PAYLOAD_FETCH=NO','CLIENT_GZIP_DECOMPRESS=NO','BLOB_IFRAME=NO','THIRD_PARTY_CDN=NO','LOCAL_THREE=../vendor/three-r128.min.js','LOCAL_ORBIT=../vendor/OrbitControls-r128.js','DYNAMIC_MIRROR_LOADER=NO','PATCH_SCOPE=ISOLATED_BLOCK','NODE_SYNTAX=PASS'])+'\n',encoding='utf-8')
+          report.write_text('\n'.join(['BUILD=V25_DIRECT_STATIC_SCOPE_ISOLATED',f'HTML_BYTES={len(t.encode())}','CLIENT_PAYLOAD_FETCH=NO','CLIENT_GZIP_DECOMPRESS=NO','BLOB_IFRAME=NO','THIRD_PARTY_CDN=NO','LOCAL_THREE=../vendor/three-r128.min.js','LOCAL_ORBIT=../vendor/OrbitControls-r128.js','DYNAMIC_MIRROR_LOADER=NO','PATCH_SCOPE=ISOLATED_BLOCK','PATCH_ANIMATE_WIRING=PASS','CUTAWAY_WIRING=PASS','NODE_SYNTAX=PASS'])+'\n',encoding='utf-8')
           PY
       - name: Install Chromium test driver
         run: npm install --no-save puppeteer-core@24.16.0
@@ -85,7 +98,7 @@ jobs:
           python3 -m http.server 8000 >/tmp/v25-http.log 2>&1 &
           echo $! >/tmp/v25-http.pid
           sleep 1
-      - name: Validate mobile Chromium boot
+      - name: Validate mobile Chromium boot and interactions
         shell: bash
         run: |
           cat > ./v25-test.mjs <<'JS'
@@ -101,30 +114,66 @@ jobs:
           page.on('pageerror',e=>errors.push('PAGEERROR '+e.message));
           page.on('console',m=>logs.push(m.type().toUpperCase()+' '+m.text()));
           page.on('response',r=>{const s=r.status(),u=r.url();if(s>=400&&!u.endsWith('/favicon.ico'))badResponses.push(`${s} ${u}`)});
-          const resp=await page.goto('http://127.0.0.1:8000/diesel-engine-3d-sim/versions/v25-direct.html?ci=1',{waitUntil:'networkidle0',timeout:30000});
+          const resp=await page.goto('http://127.0.0.1:8000/diesel-engine-3d-sim/versions/v25-direct.html?ci=interaction',{waitUntil:'networkidle0',timeout:30000});
           if(!resp||!resp.ok())throw new Error('HTTP '+(resp&&resp.status()));
-          await new Promise(r=>setTimeout(r,5000));
-          const state=await page.evaluate(()=>{const loading=document.getElementById('loading'),fallback=document.getElementById('fallback'),canvas=document.getElementById('canvas3d');let gl=null;try{gl=canvas&&(canvas.getContext('webgl2')||canvas.getContext('webgl')||canvas.getContext('experimental-webgl'))}catch(e){}return{three:!!window.THREE,revision:window.THREE&&THREE.REVISION,orbit:!!(window.THREE&&THREE.OrbitControls),loading:loading&&getComputedStyle(loading).display,fallback:fallback&&getComputedStyle(fallback).display,canvasW:canvas&&canvas.width,canvasH:canvas&&canvas.height,webgl:!!gl,badge:document.body.innerText.includes('DIRECT STATIC')}});
+          await new Promise(r=>setTimeout(r,1800));
+          const state=await page.evaluate(()=>{const loading=document.getElementById('loading'),fallback=document.getElementById('fallback'),canvas=document.getElementById('canvas3d');let gl=null;try{gl=canvas&&(canvas.getContext('webgl2')||canvas.getContext('webgl')||canvas.getContext('experimental-webgl'))}catch(e){}return{three:!!window.THREE,revision:window.THREE&&THREE.REVISION,orbit:!!(window.THREE&&THREE.OrbitControls),loading:loading&&getComputedStyle(loading).display,fallback:fallback&&getComputedStyle(fallback).display,canvasW:canvas&&canvas.width,canvasH:canvas&&canvas.height,webgl:!!gl,badge:document.body.innerText.includes('DIRECT STATIC'),debug:!!window.__v25PatchDebug}});
           console.log('STATE',JSON.stringify(state));
+          if(!state.three||state.revision!=='128'||!state.orbit||!state.debug)throw new Error('runtime globals failed '+JSON.stringify(state));
+          if(state.loading!=='none'||state.fallback!=='none')throw new Error('boot overlay failed '+JSON.stringify(state));
+          if(!state.webgl||!state.canvasW||!state.canvasH)throw new Error('WebGL canvas failed '+JSON.stringify(state));
+
+          const before=await page.evaluate(()=>({
+            explode:document.getElementById('explodeAmount').value,
+            explodeActive:document.getElementById('explode').classList.contains('active'),
+            cutActive:document.getElementById('cutaway').classList.contains('active'),
+            frontVisible:window.__v25PatchDebug.frontCover&&window.__v25PatchDebug.frontCover.visible,
+            detailPos:window.__v25PatchDebug.refDetails.position.toArray(),
+            crankRot:window.__v25PatchDebug.refCrank.rotation.x
+          }));
+          await new Promise(r=>setTimeout(r,350));
+          const motion=await page.evaluate(()=>window.__v25PatchDebug.refCrank.rotation.x);
+          if(Math.abs(motion-before.crankRot)<0.01)throw new Error('visible V20 mechanics are not connected to animation loop');
+
+          await page.click('#explode');
+          await new Promise(r=>setTimeout(r,1400));
+          const exploded=await page.evaluate(()=>({
+            value:document.getElementById('explodeAmount').value,
+            active:document.getElementById('explode').classList.contains('active'),
+            detailPos:window.__v25PatchDebug.refDetails.position.toArray(),
+            motionPos:window.__v25PatchDebug.refMotion.position.toArray()
+          }));
+          const detailTravel=Math.hypot(...exploded.detailPos.map((v,i)=>v-before.detailPos[i]));
+          if(exploded.value!=='72'||!exploded.active||detailTravel<80||Math.abs(exploded.motionPos[1])<60)throw new Error('explode interaction failed '+JSON.stringify({before,exploded,detailTravel}));
+          console.log('EXPLODE_BUTTON=PASS',JSON.stringify(exploded));
+
+          await page.click('#cutaway');
+          await new Promise(r=>setTimeout(r,250));
+          const cutOff=await page.evaluate(()=>({active:document.getElementById('cutaway').classList.contains('active'),frontVisible:window.__v25PatchDebug.frontCover&&window.__v25PatchDebug.frontCover.visible,sectionVisible:window.__v25PatchDebug.sectionFrame&&window.__v25PatchDebug.sectionFrame.visible}));
+          if(cutOff.active||cutOff.frontVisible!==true||cutOff.sectionVisible!==false)throw new Error('cutaway OFF interaction failed '+JSON.stringify(cutOff));
+          await page.click('#cutaway');
+          await new Promise(r=>setTimeout(r,250));
+          const cutOn=await page.evaluate(()=>({active:document.getElementById('cutaway').classList.contains('active'),frontVisible:window.__v25PatchDebug.frontCover&&window.__v25PatchDebug.frontCover.visible,sectionVisible:window.__v25PatchDebug.sectionFrame&&window.__v25PatchDebug.sectionFrame.visible}));
+          if(!cutOn.active||cutOn.frontVisible!==false||cutOn.sectionVisible!==true)throw new Error('cutaway ON interaction failed '+JSON.stringify(cutOn));
+          console.log('CUTAWAY_BUTTON=PASS',JSON.stringify({cutOff,cutOn}));
+
           console.log('BAD_RESPONSES',JSON.stringify(badResponses));
           console.log('LOGS',logs.slice(-40).join('\n'));
-          await page.screenshot({path:'/tmp/v25-mobile.png',fullPage:false});
+          await page.screenshot({path:'/tmp/v25-mobile-interaction.png',fullPage:false});
           await browser.close();
           if(errors.length)throw new Error(errors.join('\n'));
           if(badResponses.length)throw new Error('critical HTTP errors '+badResponses.join('\n'));
-          if(!state.three||state.revision!=='128'||!state.orbit)throw new Error('runtime globals failed '+JSON.stringify(state));
-          if(state.loading!=='none'||state.fallback!=='none')throw new Error('boot overlay failed '+JSON.stringify(state));
-          if(!state.webgl||!state.canvasW||!state.canvasH)throw new Error('WebGL canvas failed '+JSON.stringify(state));
           console.log('MOBILE_CHROMIUM_BOOT=PASS');
+          console.log('INTERACTION_BUTTONS=PASS');
           JS
           node ./v25-test.mjs
           rm -f ./v25-test.mjs
-          printf 'MOBILE_CHROMIUM_BOOT=PASS\n' >> diesel-engine-3d-sim/logs/v25-direct-build.txt
+          printf 'MOBILE_CHROMIUM_BOOT=PASS\nINTERACTION_BUTTONS=PASS\nVISIBLE_MECHANICS_ANIMATION=PASS\n' >> diesel-engine-3d-sim/logs/v25-direct-build.txt
       - name: Commit only validated direct build
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add diesel-engine-3d-sim/versions/v25-direct.html diesel-engine-3d-sim/logs/v25-direct-build.txt
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m 'build validated V25 direct static runtime'
+          git commit -m 'build validated V25 direct interactions'
           git push
