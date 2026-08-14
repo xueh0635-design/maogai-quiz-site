@@ -68,7 +68,6 @@ jobs:
           assert '__v25Patch.updateRefEngine' in t
           out=root/'versions/v25-direct.html'
           out.write_text(t,encoding='utf-8')
-          # Parse every inline script before browser testing; catches redeclared lexical bindings.
           scripts=re.findall(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>',t,re.S|re.I)
           assert scripts, 'no inline script found'
           for i,s in enumerate(scripts):
@@ -89,7 +88,7 @@ jobs:
       - name: Validate mobile Chromium boot
         shell: bash
         run: |
-          cat > /tmp/v25-test.mjs <<'JS'
+          cat > ./v25-test.mjs <<'JS'
           import puppeteer from 'puppeteer-core';
           import fs from 'fs';
           const candidates=['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium','/usr/bin/chromium-browser'];
@@ -115,7 +114,8 @@ jobs:
           if(!state.webgl||!state.canvasW||!state.canvasH)throw new Error('WebGL canvas failed '+JSON.stringify(state));
           console.log('MOBILE_CHROMIUM_BOOT=PASS');
           JS
-          node /tmp/v25-test.mjs
+          node ./v25-test.mjs
+          rm -f ./v25-test.mjs
           printf 'MOBILE_CHROMIUM_BOOT=PASS\n' >> diesel-engine-3d-sim/logs/v25-direct-build.txt
       - name: Commit only validated direct build
         run: |
