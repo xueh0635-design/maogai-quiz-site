@@ -7,7 +7,7 @@
 </head>
 <body>
 <div id="boot">正在进入 V29 · 曲轴总成 + DOHC 配气几何强化…</div>
-<iframe id="stage" src="v28-direct.html?v29base=1" title="V29 柴油机 3D 仿真"></iframe>
+<iframe id="stage" src="v28-direct.html?v29base=1&pbr=v29pbr2" title="V29 柴油机 3D 仿真"></iframe>
 <script>
 const outer=document.getElementById('stage');
 outer.addEventListener('load',()=>setTimeout(applyV29,3600));
@@ -21,21 +21,21 @@ function applyV29(){
  #bottomDock{left:232px!important;right:242px!important;min-height:116px!important}
  #topbar{height:49px!important}.topActions{gap:4px!important}.topActions button{padding:5px 7px!important;font-size:10px!important}
  #v26Mode,#v27Mode,#v28Mode{display:none!important}.refCallout{font-size:10px!important;min-width:96px!important;max-width:138px!important;padding:6px 8px!important}
- #viewport{background:radial-gradient(ellipse at 50% 43%,#173249 0%,#081520 53%,#010407 100%)!important}
+ #viewport{background:radial-gradient(ellipse at 50% 43%,#122b40 0%,#071520 53%,#010407 100%)!important}
  @media(max-width:1180px){#leftPanel{width:190px!important}#rightPanel{width:198px!important}#bottomDock{left:214px!important;right:222px!important}}
  `;d.head.appendChild(style);
- const badge=d.querySelector('.qualityBadge');if(badge)badge.textContent='V29 · CRANKTRAIN + DOHC · TRUE CUTAWAY';
- const dep=d.getElementById('deployBadge');if(dep)dep.textContent='GitHub stable · v29 · CRANKTRAIN / DOHC / 4-CYL CUTAWAY';
+ const badge=d.querySelector('.qualityBadge');if(badge)badge.textContent='V29 · REFERENCE STUDIO PBR · CRANKTRAIN + DOHC';
+ const dep=d.getElementById('deployBadge');if(dep)dep.textContent='GitHub stable · v29 · STUDIO PBR / CRANKTRAIN / DOHC / CUTAWAY';
  const M={
-  crank:new T.MeshPhysicalMaterial({color:0x30363a,roughness:.16,metalness:1,clearcoat:.22,clearcoatRoughness:.14}),
-  journal:new T.MeshPhysicalMaterial({color:0xe2e7e9,roughness:.075,metalness:1,clearcoat:.42,clearcoatRoughness:.07}),
-  steel:new T.MeshPhysicalMaterial({color:0xd7dde0,roughness:.11,metalness:1,clearcoat:.32,clearcoatRoughness:.09}),
-  dark:new T.MeshPhysicalMaterial({color:0x23282c,roughness:.42,metalness:.86}),
-  alloy:new T.MeshPhysicalMaterial({color:0xbfc7ca,roughness:.22,metalness:.93,clearcoat:.22}),
-  brass:new T.MeshPhysicalMaterial({color:0xb68542,roughness:.20,metalness:.95}),
-  bronze:new T.MeshPhysicalMaterial({color:0x9b6d37,roughness:.26,metalness:.90}),
-  iron:new T.MeshPhysicalMaterial({color:0x493b34,roughness:.49,metalness:.79}),
-  black:new T.MeshStandardMaterial({color:0x050607,roughness:.94,metalness:.03}),
+  crank:new T.MeshPhysicalMaterial({color:0x2b3034,roughness:.18,metalness:1,clearcoat:.20,clearcoatRoughness:.15,envMapIntensity:1.28}),
+  journal:new T.MeshPhysicalMaterial({color:0xe1e6e9,roughness:.075,metalness:1,clearcoat:.42,clearcoatRoughness:.07,envMapIntensity:1.72}),
+  steel:new T.MeshPhysicalMaterial({color:0xd4dade,roughness:.11,metalness:1,clearcoat:.32,clearcoatRoughness:.09,envMapIntensity:1.58}),
+  dark:new T.MeshPhysicalMaterial({color:0x1b2125,roughness:.50,metalness:.70,envMapIntensity:.72}),
+  alloy:new T.MeshPhysicalMaterial({color:0x98a3a8,roughness:.30,metalness:.84,clearcoat:.16,clearcoatRoughness:.28,envMapIntensity:1.06}),
+  brass:new T.MeshPhysicalMaterial({color:0xc08a3d,roughness:.20,metalness:.96,envMapIntensity:1.34}),
+  bronze:new T.MeshPhysicalMaterial({color:0x9e6f35,roughness:.28,metalness:.88,envMapIntensity:1.06}),
+  iron:new T.MeshPhysicalMaterial({color:0x3d3531,roughness:.52,metalness:.68,envMapIntensity:.74}),
+  black:new T.MeshStandardMaterial({color:0x040607,roughness:.95,metalness:.02,envMapIntensity:.10}),
   cut:new T.MeshBasicMaterial({color:0xff3b30,transparent:true,opacity:.95,depthTest:false})
  };
  function mesh(g,m,pos=[0,0,0],rot=[0,0,0],name=''){const o=new T.Mesh(g,m);o.position.set(...pos);o.rotation.set(...rot);o.castShadow=o.receiveShadow=true;o.name=name;return o}
@@ -127,11 +127,11 @@ function applyV29(){
  const v29Cuts=new T.Group();v29Cuts.name='V29 Section Edge Reinforcement';scene.add(v29Cuts);
  for(const y of [454,548]){const e=box(648,4,5,M.cut,[0,y,116],[0,0,0],'Machined Section Edge');e.renderOrder=10;v29Cuts.add(e)}
  // Default presentation: near-front, slight downward look, full four-cylinder cranktrain centered between side panels.
- const front=d.querySelector('[data-view="front"]');if(front){front.click();front.textContent='剖视正面'}
+ const front=d.querySelector('[data-view="front"]');if(front){front.textContent='剖视正面'}
  const camera=[...scene.children].find(o=>o.isCamera);if(camera){camera.position.set(0,365,1560);camera.fov=28.5;camera.updateProjectionMatrix()}
  const cut=d.getElementById('cutaway');if(cut&&!cut.classList.contains('active'))cut.click();
  const mode=d.createElement('div');mode.id='v29Mode';mode.textContent='V29 · 四缸曲轴总成 / DOHC 16V / 中置喷油 / 开放剖视';mode.style.cssText='position:absolute;top:66px;left:50%;transform:translateX(-50%);z-index:4;padding:5px 11px;border:1px solid rgba(48,173,255,.52);border-radius:999px;background:rgba(2,9,15,.76);color:#c3ebff;font:10px system-ui;pointer-events:none';d.getElementById('app').appendChild(mode);
- w.__v29Debug={ready:true,discreteCrank:true,crankThrows:4,mainJournals:5,movingPistonDetail:true,movingRodDetail:true,dohcNoseLobes:true,fingerFollowers:true,railDetail:true,turboCore:true,oilFittings:true,defaultFrontCutaway:true};
+ w.__v29Debug={ready:true,studioPBR:true,discreteCrank:true,crankThrows:4,mainJournals:5,movingPistonDetail:true,movingRodDetail:true,dohcNoseLobes:true,fingerFollowers:true,railDetail:true,turboCore:true,oilFittings:true,defaultFrontCutaway:true,journalRoughness:M.journal.roughness,journalEnv:M.journal.envMapIntensity,alloyRoughness:M.alloy.roughness,alloyEnv:M.alloy.envMapIntensity};
  document.getElementById('boot').remove();
 }
 </script>

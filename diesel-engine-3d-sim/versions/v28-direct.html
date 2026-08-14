@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>直列四缸柴油机 · V28 True Section Geometry</title>
 <style>html,body,#stage{margin:0;width:100%;height:100%;border:0;background:#02070c;overflow:hidden}#boot{position:fixed;inset:0;display:grid;place-items:center;z-index:8;background:#02070c;color:#dff4ff;font:14px system-ui}</style>
-</head><body><div id="boot">正在进入 V28 · 实体半壳剖切 + 内部机械细节…</div><iframe id="stage" src="v27-direct.html?v28base=1" title="V28 柴油机 3D 仿真"></iframe>
+</head><body><div id="boot">正在进入 V28 · 实体半壳剖切 + 内部机械细节…</div><iframe id="stage" src="v27-direct.html?v28base=1&pbr=v29pbr2" title="V28 柴油机 3D 仿真"></iframe>
 <script>
 const outer=document.getElementById('stage');
 outer.addEventListener('load',()=>setTimeout(applyV28,2600));
@@ -74,7 +74,7 @@ function applyV28(){
  details.add(tube([[266,176,148],[222,167,140],[150,143,130],[40,118,123],[-90,108,125]],4.8,M.brass,'Rigid Oil Feed Line'));
  details.add(tube([[334,176,148],[276,190,140],[195,185,133],[112,155,126]],4.4,M.brass,'Rigid Oil Return Line'));
  // Force the reference-like default presentation: true front cutaway first, with the full engine fitting between the side panels.
- const front=d.querySelector('[data-view="front"]');if(front){front.click();front.textContent='剖视正面'}
+ const front=d.querySelector('[data-view="front"]');if(front){front.textContent='剖视正面'}
  const camera=[...scene.children].find(o=>o.isCamera);if(camera){camera.position.set(0,330,1500);camera.fov=30;camera.updateProjectionMatrix()}
  const cut=d.getElementById('cutaway');if(cut&&!cut.classList.contains('active'))cut.click();
  const mode=d.createElement('div');mode.id='v28Mode';mode.textContent='V28 · 实体半壳剖切：四活塞 / 四连杆 / 曲轴 / 主轴承直接可读';mode.style.cssText='position:absolute;top:68px;left:50%;transform:translateX(-50%);z-index:4;padding:5px 11px;border:1px solid rgba(48,173,255,.5);border-radius:999px;background:rgba(2,9,15,.74);color:#bce8ff;font:10px system-ui;pointer-events:none';d.getElementById('app').appendChild(mode);
