@@ -1,0 +1,35 @@
+name: Vendor Three.js r128
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/vendor-three.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Fetch Three.js r128 from npm
+        run: |
+          npm pack three@0.128.0
+          tar -xzf three-0.128.0.tgz
+          mkdir -p diesel-engine-3d-sim/vendor
+          cp package/build/three.min.js diesel-engine-3d-sim/vendor/three-r128.min.js
+          cp package/examples/js/controls/OrbitControls.js diesel-engine-3d-sim/vendor/OrbitControls-r128.js
+          printf 'r128\n' > diesel-engine-3d-sim/vendor/VERSION.txt
+      - name: Commit vendored runtime
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diesel-engine-3d-sim/vendor
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'vendor Three.js r128 for mobile boot'
+          git push
