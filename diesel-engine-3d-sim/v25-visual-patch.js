@@ -40,8 +40,11 @@
   const studioEnv=new THREE.CubeTexture([studioFace('warm'),studioFace('cool'),studioFace('neutral'),studioFace('neutral'),studioFace('neutral'),studioFace('cool')]);
   studioEnv.encoding=THREE.sRGBEncoding;studioEnv.needsUpdate=true;scene.environment=studioEnv;
 
-  // The old base hemisphere was the main source of the washed-out white castings.
-  scene.traverse(o=>{if(o.isHemisphereLight)o.intensity=Math.min(o.intensity,.52);if(o.isAmbientLight)o.intensity=Math.min(o.intensity,.055)});
+  // Only touch top-level lighting nodes during boot; never recurse through the full model tree here.
+  for(const o of scene.children){
+    if(o.type==='HemisphereLight')o.intensity=Math.min(o.intensity,.52);
+    else if(o.type==='AmbientLight')o.intensity=Math.min(o.intensity,.055);
+  }
   key.color.setHex(0xffefda);key.intensity=1.28;key.position.set(590,800,660);
   key.shadow.mapSize.set(isMobileView?1536:3072,isMobileView?1536:3072);key.shadow.camera.left=-800;key.shadow.camera.right=800;key.shadow.camera.top=840;key.shadow.camera.bottom=-780;key.shadow.bias=-0.00012;key.shadow.normalBias=.018;
   rim.color.setHex(0x68b6ff);rim.intensity=1.00;rim.position.set(-760,470,-600);
@@ -86,6 +89,7 @@
   if(typeof coverMat!=='undefined')tunePhysical(coverMat,{color:0x343b40,roughness:.40,metalness:.83,clearcoat:.08,clearcoatRoughness:.39,envMapIntensity:.88});
   if(typeof railBracketMat!=='undefined')tunePhysical(railBracketMat,{color:0xa27e45,roughness:.25,metalness:.90,envMapIntensity:1.19});
 
+  // Existing mesh traversal is retained; it was already exercised by the validated PBR build.
   scene.traverse(o=>{if(!o.isMesh)return;const mats=Array.isArray(o.material)?o.material:[o.material];for(const m of mats){if(!m||!(m.isMeshStandardMaterial||m.isMeshPhysicalMaterial))continue;if('envMapIntensity'in m&&m.envMapIntensity===1)m.envMapIntensity=m.transparent?.34:(m.metalness>.75?1.12:.58);m.dithering=true;m.needsUpdate=true}});
   if(typeof studioFloor!=='undefined')tunePhysical(studioFloor.material,{color:0x010305,roughness:.88,metalness:.04,clearcoat:.02,clearcoatRoughness:.80,envMapIntensity:.10});
 
@@ -93,6 +97,6 @@
 
   let vignette=document.getElementById('v25StudioVignette');if(!vignette){vignette=document.createElement('div');vignette.id='v25StudioVignette';vignette.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at 52% 43%,rgba(0,0,0,0) 38%,rgba(0,0,0,.08) 62%,rgba(0,0,0,.50) 100%)';viewport.appendChild(vignette)}
   const badge=document.querySelector('.qualityBadge');if(badge)badge.textContent='V25 · HIGH-CONTRAST STUDIO PBR';
-  let hemiMax=0;scene.traverse(o=>{if(o.isHemisphereLight)hemiMax=Math.max(hemiMax,o.intensity)});
+  let hemiMax=0;for(const o of scene.children){if(o.type==='HemisphereLight')hemiMax=Math.max(hemiMax,o.intensity)}
   window.__v25VisualDebug={enabled:true,environment:!!scene.environment,exposure:renderer.toneMappingExposure,machinedRoughness:refM.machined.roughness,machinedEnv:refM.machined.envMapIntensity,castRoughness:refM.cast.roughness,brassMetalness:refM.brass.metalness,contactShadow:!!contactShadow,vignette:!!vignette,castMicrotexture:!!refM.cast.bumpMap,hemisphereMax,cameraPosition:camera.position.toArray(),cameraTarget:controls.target.toArray(),cameraFov:camera.fov};
 })();
