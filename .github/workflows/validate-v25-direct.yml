@@ -1,0 +1,76 @@
+name: Validate V25 Direct
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/validate-v25-direct.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Static invariants and JavaScript syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,subprocess,tempfile
+          p=Path('diesel-engine-3d-sim/versions/v25-direct.html')
+          t=p.read_text()
+          assert '../vendor/three-r128.min.js' in t
+          assert '../vendor/OrbitControls-r128.js' in t
+          for bad in ['cdnjs.cloudflare.com','cdn.jsdelivr.net','unpkg.com/three','loadEngineLibraries','tryUrls(','DecompressionStream','createObjectURL']:
+              assert bad not in t, bad
+          scripts=re.findall(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>',t,re.S|re.I)
+          print('INLINE_SCRIPTS',len(scripts))
+          for i,s in enumerate(scripts):
+              f=Path(f'/tmp/v25-inline-{i}.js'); f.write_text(s)
+              subprocess.run(['node','--check',str(f)],check=True)
+          subprocess.run(['node','--check','diesel-engine-3d-sim/vendor/three-r128.min.js'],check=True)
+          subprocess.run(['node','--check','diesel-engine-3d-sim/vendor/OrbitControls-r128.js'],check=True)
+          print('STATIC_AND_SYNTAX=PASS')
+          PY
+      - name: Install browser driver
+        run: npm install --no-save puppeteer-core@24.16.0
+      - name: Launch local server
+        run: |
+          python3 -m http.server 8000 >/tmp/v25-http.log 2>&1 &
+          echo $! >/tmp/v25-http.pid
+          sleep 1
+      - name: Mobile Chromium boot test
+        run: |
+          cat > /tmp/v25-test.mjs <<'JS'
+          import puppeteer from 'puppeteer-core';
+          import fs from 'fs';
+          const candidates=['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium','/usr/bin/chromium-browser'];
+          const exe=candidates.find(p=>fs.existsSync(p));
+          if(!exe) throw new Error('No system Chrome found');
+          const browser=await puppeteer.launch({executablePath:exe,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--enable-webgl','--ignore-gpu-blocklist','--use-angle=swiftshader']});
+          const page=await browser.newPage();
+          await page.setViewport({width:390,height:844,deviceScaleFactor:2,isMobile:true,hasTouch:true});
+          const errors=[]; const logs=[];
+          page.on('pageerror',e=>errors.push('PAGEERROR '+e.message));
+          page.on('console',m=>{logs.push(m.type().toUpperCase()+' '+m.text()); if(m.type()==='error') errors.push('CONSOLE '+m.text())});
+          const resp=await page.goto('http://127.0.0.1:8000/diesel-engine-3d-sim/versions/v25-direct.html?ci=1',{waitUntil:'networkidle0',timeout:30000});
+          if(!resp || !resp.ok()) throw new Error('HTTP '+(resp&&resp.status()));
+          await new Promise(r=>setTimeout(r,5000));
+          const state=await page.evaluate(()=>{
+            const loading=document.getElementById('loading'),fallback=document.getElementById('fallback'),canvas=document.getElementById('canvas3d');
+            const gl=canvas&&(canvas.getContext('webgl2')||canvas.getContext('webgl')||canvas.getContext('experimental-webgl'));
+            return {three:!!window.THREE,revision:window.THREE&&THREE.REVISION,orbit:!!(window.THREE&&THREE.OrbitControls),loading:loading&&getComputedStyle(loading).display,fallback:fallback&&getComputedStyle(fallback).display,canvasW:canvas&&canvas.width,canvasH:canvas&&canvas.height,webgl:!!gl,badge:document.body.innerText.includes('DIRECT STATIC')};
+          });
+          console.log('STATE',JSON.stringify(state));
+          console.log('LOGS',logs.slice(-30).join('\n'));
+          await page.screenshot({path:'/tmp/v25-mobile.png',fullPage:false});
+          await browser.close();
+          if(errors.length) throw new Error(errors.join('\n'));
+          if(!state.three || state.revision!=='128' || !state.orbit) throw new Error('runtime globals failed '+JSON.stringify(state));
+          if(state.loading!=='none' || state.fallback!=='none') throw new Error('boot overlay failed '+JSON.stringify(state));
+          if(!state.webgl || !state.canvasW || !state.canvasH) throw new Error('WebGL canvas failed '+JSON.stringify(state));
+          console.log('MOBILE_CHROMIUM_BOOT=PASS');
+          JS
+          node /tmp/v25-test.mjs
