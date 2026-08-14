@@ -1,0 +1,114 @@
+name: Upgrade V29 Studio PBR R2
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/upgrade-v29-studio-pbr-r2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply V29 Studio PBR R2
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('diesel-engine-3d-sim'); key='v29pbr2'
+          chain=[
+            ('versions/v26-direct.html','v25-direct.html?base=v25&v26=1',f'v25-direct.html?base=v25&v26=1&pbr={key}'),
+            ('versions/v27-direct.html','v26-direct.html?v27base=1',f'v26-direct.html?v27base=1&pbr={key}'),
+            ('versions/v28-direct.html','v27-direct.html?v28base=1',f'v27-direct.html?v28base=1&pbr={key}'),
+            ('versions/v29-direct.html','v28-direct.html?v29base=1',f'v28-direct.html?v29base=1&pbr={key}')]
+          for rel,old,new in chain:
+              p=root/rel;t=p.read_text()
+              if new not in t:
+                  assert old in t, rel;t=t.replace(old,new,1)
+              p.write_text(t)
+
+          # V28/V29 were the only wrappers that actually clicked the old close-up front preset.
+          for rel in ['versions/v28-direct.html','versions/v29-direct.html']:
+              p=root/rel;t=p.read_text()
+              old="const front=d.querySelector('[data-view=\"front\"]');if(front){front.click();front.textContent='剖视正面'}"
+              new="const front=d.querySelector('[data-view=\"front\"]');if(front){front.textContent='剖视正面'}"
+              if new not in t:
+                  assert old in t, 'front preset marker '+rel;t=t.replace(old,new,1)
+              p.write_text(t)
+
+          p=root/'versions/v29-direct.html';t=p.read_text()
+          R={
+            "#viewport{background:radial-gradient(ellipse at 50% 43%,#173249 0%,#081520 53%,#010407 100%)!important}":"#viewport{background:radial-gradient(ellipse at 50% 43%,#122b40 0%,#071520 53%,#010407 100%)!important}",
+            "V29 · CRANKTRAIN + DOHC · TRUE CUTAWAY":"V29 · REFERENCE STUDIO PBR · CRANKTRAIN + DOHC",
+            "GitHub stable · v29 · CRANKTRAIN / DOHC / 4-CYL CUTAWAY":"GitHub stable · v29 · STUDIO PBR / CRANKTRAIN / DOHC / CUTAWAY",
+            "crank:new T.MeshPhysicalMaterial({color:0x30363a,roughness:.16,metalness:1,clearcoat:.22,clearcoatRoughness:.14})":"crank:new T.MeshPhysicalMaterial({color:0x2b3034,roughness:.18,metalness:1,clearcoat:.20,clearcoatRoughness:.15,envMapIntensity:1.28})",
+            "journal:new T.MeshPhysicalMaterial({color:0xe2e7e9,roughness:.075,metalness:1,clearcoat:.42,clearcoatRoughness:.07})":"journal:new T.MeshPhysicalMaterial({color:0xe1e6e9,roughness:.075,metalness:1,clearcoat:.42,clearcoatRoughness:.07,envMapIntensity:1.72})",
+            "steel:new T.MeshPhysicalMaterial({color:0xd7dde0,roughness:.11,metalness:1,clearcoat:.32,clearcoatRoughness:.09})":"steel:new T.MeshPhysicalMaterial({color:0xd4dade,roughness:.11,metalness:1,clearcoat:.32,clearcoatRoughness:.09,envMapIntensity:1.58})",
+            "dark:new T.MeshPhysicalMaterial({color:0x23282c,roughness:.42,metalness:.86})":"dark:new T.MeshPhysicalMaterial({color:0x1b2125,roughness:.50,metalness:.70,envMapIntensity:.72})",
+            "alloy:new T.MeshPhysicalMaterial({color:0xbfc7ca,roughness:.22,metalness:.93,clearcoat:.22})":"alloy:new T.MeshPhysicalMaterial({color:0x98a3a8,roughness:.30,metalness:.84,clearcoat:.16,clearcoatRoughness:.28,envMapIntensity:1.06})",
+            "brass:new T.MeshPhysicalMaterial({color:0xb68542,roughness:.20,metalness:.95})":"brass:new T.MeshPhysicalMaterial({color:0xc08a3d,roughness:.20,metalness:.96,envMapIntensity:1.34})",
+            "bronze:new T.MeshPhysicalMaterial({color:0x9b6d37,roughness:.26,metalness:.90})":"bronze:new T.MeshPhysicalMaterial({color:0x9e6f35,roughness:.28,metalness:.88,envMapIntensity:1.06})",
+            "iron:new T.MeshPhysicalMaterial({color:0x493b34,roughness:.49,metalness:.79})":"iron:new T.MeshPhysicalMaterial({color:0x3d3531,roughness:.52,metalness:.68,envMapIntensity:.74})",
+            "black:new T.MeshStandardMaterial({color:0x050607,roughness:.94,metalness:.03})":"black:new T.MeshStandardMaterial({color:0x040607,roughness:.95,metalness:.02,envMapIntensity:.10})"}
+          for old,new in R.items():
+              if new not in t:
+                  assert old in t, old[:60];t=t.replace(old,new,1)
+          old="w.__v29Debug={ready:true,discreteCrank:true,crankThrows:4,mainJournals:5,movingPistonDetail:true,movingRodDetail:true,dohcNoseLobes:true,fingerFollowers:true,railDetail:true,turboCore:true,oilFittings:true,defaultFrontCutaway:true};"
+          new="w.__v29Debug={ready:true,studioPBR:true,discreteCrank:true,crankThrows:4,mainJournals:5,movingPistonDetail:true,movingRodDetail:true,dohcNoseLobes:true,fingerFollowers:true,railDetail:true,turboCore:true,oilFittings:true,defaultFrontCutaway:true,journalRoughness:M.journal.roughness,journalEnv:M.journal.envMapIntensity,alloyRoughness:M.alloy.roughness,alloyEnv:M.alloy.envMapIntensity};"
+          if new not in t:
+              assert old in t;t=t.replace(old,new,1)
+          p.write_text(t)
+
+          ip=root/'index.html';idx=ip.read_text()
+          idx=idx.replace('versions/v29-direct.html?build=v29-cranktrain-dohc&cb=2ff60524',f'versions/v29-direct.html?build=v29-studio-pbr-r2&cb={key}')
+          idx=idx.replace('四冲程柴油机 3D 仿真 · V29 Cranktrain + DOHC Geometry','四冲程柴油机 3D 仿真 · V29 Studio PBR + Cranktrain + DOHC')
+          idx=idx.replace('正在进入 V29 · 曲轴总成 + DOHC 配气几何强化…','正在进入 V29 · Studio PBR + 曲轴总成 + DOHC 配气几何强化…')
+          ip.write_text(idx)
+          for token in [f'pbr={key}','studioPBR:true','envMapIntensity:1.72','envMapIntensity:1.06','REFERENCE STUDIO PBR']:
+              assert token in p.read_text(),token
+          PY
+      - name: Install Chromium
+        run: npm install --no-save puppeteer-core@24.16.0
+      - name: Serve
+        run: |
+          python3 -m http.server 8000 >/tmp/v29-r2-http.log 2>&1 &
+          sleep 1
+      - name: Validate final nested V29
+        shell: bash
+        run: |
+          cat > v29-r2-test.mjs <<'JS'
+          import puppeteer from 'puppeteer-core';import fs from 'fs';
+          const exe=['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium','/usr/bin/chromium-browser'].find(fs.existsSync);if(!exe)throw new Error('No Chrome');
+          const browser=await puppeteer.launch({executablePath:exe,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--enable-webgl','--ignore-gpu-blocklist','--use-angle=swiftshader']});
+          const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.stack||e.message));await page.setViewport({width:1536,height:960,deviceScaleFactor:1});
+          await page.goto('http://127.0.0.1:8000/diesel-engine-3d-sim/versions/v29-direct.html?ci=r2',{waitUntil:'domcontentloaded',timeout:30000});
+          await page.waitForFunction(()=>{let f=document.getElementById('stage'),w=f&&f.contentWindow,d=f&&f.contentDocument;for(let i=0;i<8&&d;i++){const n=d.getElementById('stage');if(!n)break;f=n;w=f.contentWindow;d=f.contentDocument}return !!(w?.__v29Debug?.studioPBR&&w?.__v25VisualDebug?.environment)}, {timeout:90000,polling:500});await new Promise(r=>setTimeout(r,1200));
+          const state=await page.evaluate(()=>{let f=document.getElementById('stage'),w=f.contentWindow,d=f.contentDocument;for(let i=0;i<8&&d;i++){const n=d.getElementById('stage');if(!n)break;f=n;w=f.contentWindow;d=f.contentDocument}const p=w.__v25PatchDebug,scene=p.refRoot.parent;let crank=false,turbo=false,followers=0;scene.traverse(o=>{if(o.name==='V29 Forged Four Cylinder Crankshaft')crank=true;if(o.name==='V29 Turbo Core Detail')turbo=true;if(o.name==='Finger Follower')followers++});return{v25:w.__v25VisualDebug,v29:w.__v29Debug,crank,turbo,followers,badge:d.querySelector('.qualityBadge')?.textContent||'',fallback:d.getElementById('fallback')?getComputedStyle(d.getElementById('fallback')).display:null}});
+          console.log('STATE',JSON.stringify(state));if(errors.length)throw new Error(errors.slice(0,4).join('\n'));if(!state.crank||!state.turbo||state.followers<8||!state.v29.studioPBR)throw new Error('geometry/PBR missing');if(state.fallback!=='none')throw new Error('fallback visible');if(!state.v25.environment||state.v25.hemisphereMax>.5||state.v25.studioFloorVisible!==false)throw new Error('stale V25 base '+JSON.stringify(state.v25));if(state.v25.cameraPosition[2]<2200||state.v25.cameraPosition[2]>2400)throw new Error('base framing not retained '+JSON.stringify(state.v25.cameraPosition));if(state.v29.journalEnv<1.65||state.v29.alloyRoughness<.27||state.v29.alloyEnv>1.15)throw new Error('material balance failed');
+          const before=await page.evaluate(()=>{let f=document.getElementById('stage'),w=f.contentWindow,d=f.contentDocument;for(let i=0;i<8&&d;i++){const n=d.getElementById('stage');if(!n)break;f=n;w=f.contentWindow;d=f.contentDocument}return w.__v25PatchDebug.refDetails.position.toArray()});
+          await page.evaluate(()=>{let f=document.getElementById('stage'),w=f.contentWindow,d=f.contentDocument;for(let i=0;i<8&&d;i++){const n=d.getElementById('stage');if(!n)break;f=n;w=f.contentWindow;d=f.contentDocument}const b=d.getElementById('explode');if(!b.classList.contains('active'))b.click()});await new Promise(r=>setTimeout(r,1100));
+          const ex=await page.evaluate(()=>{let f=document.getElementById('stage'),w=f.contentWindow,d=f.contentDocument;for(let i=0;i<8&&d;i++){const n=d.getElementById('stage');if(!n)break;f=n;w=f.contentWindow;d=f.contentDocument}return{v:d.getElementById('explodeAmount').value,p:w.__v25PatchDebug.refDetails.position.toArray(),a:d.getElementById('explode').classList.contains('active')}});const travel=Math.hypot(...ex.p.map((v,i)=>v-before[i]));if(ex.v!=='72'||!ex.a||travel<50)throw new Error('explode failed '+JSON.stringify({ex,travel}));
+          const cut=await page.evaluate(()=>{let f=document.getElementById('stage'),w=f.contentWindow,d=f.contentDocument;for(let i=0;i<8&&d;i++){const n=d.getElementById('stage');if(!n)break;f=n;w=f.contentWindow;d=f.contentDocument}const b=d.getElementById('cutaway');if(!b.classList.contains('active'))b.click();b.click();w.__v25PatchDebug.updateV21(.016);const off=[b.classList.contains('active'),w.__v25PatchDebug.frontCover.visible,w.__v25PatchDebug.sectionFrame.visible];b.click();w.__v25PatchDebug.updateV21(.016);const on=[b.classList.contains('active'),w.__v25PatchDebug.frontCover.visible,w.__v25PatchDebug.sectionFrame.visible];return{off,on}});if(cut.off[0]||cut.off[1]!==true||cut.off[2]!==false||!cut.on[0]||cut.on[1]!==false||cut.on[2]!==true)throw new Error('cutaway failed '+JSON.stringify(cut));
+          await page.screenshot({path:'/tmp/v29-studio-pbr-r2.png'});console.log('DESKTOP=PASS');
+          const mobile=await browser.newPage(),me=[];mobile.on('pageerror',e=>me.push(e.stack||e.message));await mobile.setViewport({width:390,height:844,deviceScaleFactor:2,isMobile:true,hasTouch:true});await mobile.goto('http://127.0.0.1:8000/diesel-engine-3d-sim/versions/v29-direct.html?ci=mobile-r2',{waitUntil:'domcontentloaded',timeout:30000});await mobile.waitForFunction(()=>{let f=document.getElementById('stage'),w=f&&f.contentWindow,d=f&&f.contentDocument;for(let i=0;i<8&&d;i++){const n=d.getElementById('stage');if(!n)break;f=n;w=f.contentWindow;d=f.contentDocument}return !!w?.__v29Debug?.studioPBR},{timeout:90000,polling:600});if(me.length)throw new Error('mobile '+me.slice(0,4).join('\n'));console.log('MOBILE=PASS');await browser.close();
+          JS
+          node v29-r2-test.mjs
+          rm v29-r2-test.mjs
+      - name: Upload preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: v29-studio-pbr-r2-preview
+          path: /tmp/v29-studio-pbr-r2.png
+          retention-days: 7
+      - name: Commit validated integration
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diesel-engine-3d-sim/index.html diesel-engine-3d-sim/versions/v26-direct.html diesel-engine-3d-sim/versions/v27-direct.html diesel-engine-3d-sim/versions/v28-direct.html diesel-engine-3d-sim/versions/v29-direct.html
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'integrate V29 Studio PBR with validated framing'
+          git push
