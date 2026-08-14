@@ -1,0 +1,3 @@
+GitHub connector write probe
+Timestamp: 2026-08-15
+Purpose: verify that creating a new subdirectory and text file in the existing repository works before syncing the V5 diesel-engine simulation.
