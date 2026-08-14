@@ -107,64 +107,26 @@ jobs:
           const page=await browser.newPage();
           await page.setViewport({width:390,height:844,deviceScaleFactor:2,isMobile:true,hasTouch:true});
           const errors=[]; const logs=[]; const badResponses=[];
-          page.on('pageerror',e=>errors.push('PAGEERROR '+e.message));
+          page.on('pageerror',e=>errors.push('PAGEERROR '+(e.stack||e.message)));
           page.on('console',m=>logs.push(m.type().toUpperCase()+' '+m.text()));
           page.on('response',r=>{const s=r.status(),u=r.url();if(s>=400&&!u.endsWith('/favicon.ico'))badResponses.push(`${s} ${u}`)});
           const resp=await page.goto('http://127.0.0.1:8000/diesel-engine-3d-sim/versions/v25-direct.html?ci=interaction',{waitUntil:'networkidle0',timeout:30000});
           if(!resp||!resp.ok())throw new Error('HTTP '+(resp&&resp.status()));
-          await new Promise(r=>setTimeout(r,1800));
+          await new Promise(r=>setTimeout(r,1200));
           const state=await page.evaluate(()=>{const loading=document.getElementById('loading'),fallback=document.getElementById('fallback'),canvas=document.getElementById('canvas3d');let gl=null;try{gl=canvas&&(canvas.getContext('webgl2')||canvas.getContext('webgl')||canvas.getContext('experimental-webgl'))}catch(e){}return{three:!!window.THREE,revision:window.THREE&&THREE.REVISION,orbit:!!(window.THREE&&THREE.OrbitControls),loading:loading&&getComputedStyle(loading).display,fallback:fallback&&getComputedStyle(fallback).display,canvasW:canvas&&canvas.width,canvasH:canvas&&canvas.height,webgl:!!gl,badge:document.body.innerText.includes('DIRECT STATIC'),debug:!!window.__v25PatchDebug}});
           console.log('STATE',JSON.stringify(state));
-          console.log('PAGE_ERRORS_AFTER_BOOT',JSON.stringify(errors));
-          if(errors.length)throw new Error(errors.join('\n'));
-          if(!state.three||state.revision!=='128'||!state.orbit||!state.debug)throw new Error('runtime globals failed '+JSON.stringify(state));
-          if(state.loading!=='none'||state.fallback!=='none')throw new Error('boot overlay failed '+JSON.stringify(state));
-          if(!state.webgl||!state.canvasW||!state.canvasH)throw new Error('WebGL canvas failed '+JSON.stringify(state));
-
-          const before=await page.evaluate(()=>({
-            explode:document.getElementById('explodeAmount').value,
-            explodeActive:document.getElementById('explode').classList.contains('active'),
-            cutActive:document.getElementById('cutaway').classList.contains('active'),
-            frontVisible:window.__v25PatchDebug.frontCover&&window.__v25PatchDebug.frontCover.visible,
-            detailPos:window.__v25PatchDebug.refDetails.position.toArray()
-          }));
-
-          await page.click('#explode');
-          const exploded=await page.evaluate(()=>{
-            for(let i=0;i<80;i++)window.__v25PatchDebug.updateV23(.05);
-            window.__v25PatchDebug.updateV22(.05);
-            return{
-              value:document.getElementById('explodeAmount').value,
-              active:document.getElementById('explode').classList.contains('active'),
-              detailPos:window.__v25PatchDebug.refDetails.position.toArray(),
-              motionPos:window.__v25PatchDebug.refMotion.position.toArray()
+          const probe=await page.evaluate(()=>{
+            const out={};
+            for(const k of ['updateRefEngine','updateV21','updateV22','updateV23']){
+              try{window.__v25PatchDebug[k](.016);out[k]='OK'}catch(e){out[k]=String(e&&e.stack||e)}
             }
+            return out;
           });
-          const detailTravel=Math.hypot(...exploded.detailPos.map((v,i)=>v-before.detailPos[i]));
-          if(exploded.value!=='72'||!exploded.active||detailTravel<80||Math.abs(exploded.motionPos[1])<60)throw new Error('explode interaction failed '+JSON.stringify({before,exploded,detailTravel}));
-          console.log('EXPLODE_BUTTON=PASS',JSON.stringify(exploded));
-
-          await page.click('#cutaway');
-          const cutOff=await page.evaluate(()=>({active:document.getElementById('cutaway').classList.contains('active'),frontVisible:window.__v25PatchDebug.frontCover&&window.__v25PatchDebug.frontCover.visible,sectionVisible:window.__v25PatchDebug.sectionFrame&&window.__v25PatchDebug.sectionFrame.visible}));
-          if(cutOff.active||cutOff.frontVisible!==true||cutOff.sectionVisible!==false)throw new Error('cutaway OFF interaction failed '+JSON.stringify(cutOff));
-          await page.click('#cutaway');
-          const cutOn=await page.evaluate(()=>({active:document.getElementById('cutaway').classList.contains('active'),frontVisible:window.__v25PatchDebug.frontCover&&window.__v25PatchDebug.frontCover.visible,sectionVisible:window.__v25PatchDebug.sectionFrame&&window.__v25PatchDebug.sectionFrame.visible}));
-          if(!cutOn.active||cutOn.frontVisible!==false||cutOn.sectionVisible!==true)throw new Error('cutaway ON interaction failed '+JSON.stringify(cutOn));
-          console.log('CUTAWAY_BUTTON=PASS',JSON.stringify({cutOff,cutOn}));
-
-          console.log('PAGE_ERRORS_AFTER_INTERACTION',JSON.stringify(errors));
-          console.log('BAD_RESPONSES',JSON.stringify(badResponses));
-          console.log('LOGS',logs.slice(-40).join('\n'));
-          await page.screenshot({path:'/tmp/v25-mobile-interaction.png',fullPage:false});
-          await browser.close();
-          if(errors.length)throw new Error(errors.join('\n'));
-          if(badResponses.length)throw new Error('critical HTTP errors '+badResponses.join('\n'));
-          console.log('MOBILE_CHROMIUM_BOOT=PASS');
-          console.log('INTERACTION_BUTTONS=PASS');
+          console.log('PATCH_PROBE',JSON.stringify(probe));
+          console.log('PAGE_ERRORS_AFTER_BOOT',JSON.stringify(errors.slice(0,6)));
+          throw new Error('V25 probe run intentionally stops after diagnostics');
           JS
           node ./v25-test.mjs
-          rm -f ./v25-test.mjs
-          printf 'MOBILE_CHROMIUM_BOOT=PASS\nINTERACTION_BUTTONS=PASS\nVISIBLE_EXPLODE=PASS\nVISIBLE_CUTAWAY=PASS\n' >> diesel-engine-3d-sim/logs/v25-direct-build.txt
       - name: Commit only validated direct build
         run: |
           git config user.name 'github-actions[bot]'
