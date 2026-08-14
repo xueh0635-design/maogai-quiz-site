@@ -30,4 +30,20 @@ info(refFilter,{cn:'机油滤清器',en:'Full-flow Oil Filter',mat:'钢壳滤芯
 info(flyV20,{cn:'飞轮总成',en:'Flywheel Assembly',mat:'高强度锻钢',fn:'储存转动能量并平抑四冲程扭矩波动。',param:'齿圈可见。',state:()=>`${rpm} rpm`},'motion');
 info(camA,{cn:'进气凸轮轴',en:'Intake Camshaft',mat:'表面硬化合金钢',fn:'按曲轴半速驱动进气门。',param:'DOHC 16V。',state:()=>`${Math.round((angle/2)%360)}° cam`},'valve');
 function flowSystemEnabled(name){if(name.includes('Intake')||name.includes('Exhaust'))return systemVisible('gas');if(name.includes('Fuel')||name.includes('Injector'))return systemVisible('fuel');if(name.includes('Oil')||name.includes('Lubrication'))return systemVisible('oil');if(name.includes('Coolant'))return systemVisible('cooling');return true}
-function updateV21(dt){const baseSpeed=Math.max(.25,rpm/1500);for(const g of flowSets){g.visible=flowSystemEnabled(g.name);for(const p of g.userData.arr){p.u=(p.u+dt*g.userData.speed*baseSpeed)%1;const q=g.userData.curve.getPointAt(p.u);p.m.position.copy(q);const pulse=.78+.28*Math.sin((p.u*16+performance.now()*.002));p.m.scale.setScalar(pulse)}}const cut=!!cutaway;sectionFrame.visible=cut;upperCover.visible=!cut;for(const o of detail21.children){if(o.name&&o.name.includes('Coolant Water Jacket'))o.visible=cut&&systemVisible('cooling')}}
+function updateV21(dt){
+ const safeDt=Math.max(0,Math.min(.05,Number.isFinite(dt)?dt:0));
+ const baseSpeed=Math.max(.25,rpm/1500);
+ for(const g of flowSets){
+  g.visible=flowSystemEnabled(g.name);
+  for(const p of g.userData.arr){
+   const next=p.u+safeDt*g.userData.speed*baseSpeed;
+   p.u=((next%1)+1)%1;
+   const q=g.userData.curve.getPointAt(p.u);
+   if(q)p.m.position.copy(q);
+   const pulse=.78+.28*Math.sin((p.u*16+performance.now()*.002));
+   p.m.scale.setScalar(pulse)
+  }
+ }
+ const cut=!!cutaway;sectionFrame.visible=cut;upperCover.visible=!cut;
+ for(const o of detail21.children){if(o.name&&o.name.includes('Coolant Water Jacket'))o.visible=cut&&systemVisible('cooling')}
+}
