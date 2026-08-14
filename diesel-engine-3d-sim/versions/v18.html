@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>四冲程柴油机 3D 仿真 · V18</title>
+<style>html,body,#frame{margin:0;width:100%;height:100%;border:0;background:#03070b}#msg{position:fixed;inset:0;display:grid;place-items:center;color:#eef7ff;font:14px system-ui;text-align:center;background:#03070b;z-index:2}</style>
+</head>
+<body>
+<div id="msg">正在载入柴油机 3D 仿真 v18 · Industrial Digital Twin…</div>
+<iframe id="frame" title="四冲程柴油机 3D 仿真"></iframe>
+<script>
+(async()=>{
+ try{
+  const names=['part-00.txt','part-01.txt','part-02.txt','part-03.txt','part-04.txt','part-05.txt'],parts=[];
+  for(const n of names){const r=await fetch('../payloads/v17/'+n+'?v18=1',{cache:'no-store'});if(!r.ok)throw new Error(n+' HTTP '+r.status);parts.push((await r.text()).trim())}
+  const bytes=Uint8Array.from(atob(parts.join('')),c=>c.charCodeAt(0));
+  if(!window.DecompressionStream)throw new Error('浏览器版本过旧，不支持 gzip 解压');
+  let text=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  text=text.replaceAll('v17','v18').replaceAll('V17','V18');
+  text=text.replace('GitHub stable · v18 · CAD-LIKE CUTAWAY','GitHub stable · v18 · INDUSTRIAL DIGITAL TWIN · ACCESSORY DETAIL');
+  text=text.replace('</body>','<div style="position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:9999;padding:5px 10px;border:1px solid rgba(82,190,255,.55);border-radius:999px;background:rgba(4,13,20,.80);color:#c8efff;font:12px system-ui;pointer-events:none">V18 · 工业附件/流体细化</div></body>');
+
+  const helper=`\n// V18 industrial-detail helpers\nfunction v18ClosedBelt(points,r=4){const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)),true,'centripetal');return mesh(new THREE.TubeGeometry(curve,96,r,8,true),materials.rubber,[0,0,0],[0,0,0],'Accessory Belt')}\nfunction v18BoltCircle(group,cx,cy,r,count,z){for(let i=0;i<count;i++){const a=i/count*Math.PI*2;group.add(cyl(2.4,8,materials.polished,[cx+Math.cos(a)*r,cy+Math.sin(a)*r,z],[Math.PI/2,0,0],10,'Bolt'))}}\n`;
+  text=text.replace('// floor',helper+'\n// floor');
+
+  const details=`\n// V18 front accessory drive\nconst v18AccessoryDrive=new THREE.Group();systems.details.add(v18AccessoryDrive);v18AccessoryDrive.name='V18 Front Accessory Drive';\nconst v18CrankPulley=cyl(48,22,materials.steelDark,[0,115,324],[Math.PI/2,0,0],48,'Crank Pulley');\nconst v18AltPulley=cyl(25,18,materials.steelDark,[-180,220,324],[Math.PI/2,0,0],36,'Alternator Pulley');\nconst v18IdlerPulley=cyl(21,18,materials.steelDark,[-105,95,324],[Math.PI/2,0,0],36,'Idler Pulley');\nv18AccessoryDrive.add(v18CrankPulley,v18AltPulley,v18IdlerPulley);v18AccessoryDrive.add(v18ClosedBelt([[0,163,324],[-160,238,324],[-202,202,324],[-125,82,324],[-43,92,324]],4.2));v18BoltCircle(v18AccessoryDrive,0,115,28,6,337);\ninfo(v18CrankPulley,{cn:'前端附件皮带传动',en:'Front Accessory Drive',mat:'钢制多楔带轮 + EPDM 皮带',fn:'由曲轴驱动发电机及附件，补齐参考视频中的前端传动层级。',param:'曲轴轮 / 发电机轮 / 惰轮 + 闭合皮带。',state:()=> '曲轴驱动 '+rpm+' rpm'},'details');\n// V18 manifold port flanges and fasteners\nfor(let i=0;i<4;i++){const z=zc[i];const fi=box(10,42,48,materials.alu,[-37,455,z],[0,0,0],'Intake Port Flange'),fe=box(10,42,48,materials.castDark,[37,455,z],[0,0,0],'Exhaust Port Flange');systems.gas.add(fi,fe);for(const dz of [-16,16]){systems.details.add(cyl(2.7,14,materials.polished,[-43,455,z+dz],[0,0,Math.PI/2],10));systems.details.add(cyl(2.7,14,materials.polished,[43,455,z+dz],[0,0,Math.PI/2],10))}}\n// V18 cylinder-head service hardware\nfor(let i=0;i<4;i++){const z=zc[i],cl=box(54,7,18,materials.steelDark,[0,566,z],[0,0,.10],'Injector Clamp');systems.details.add(cl);for(const x of [-66,66]){systems.details.add(cyl(4,30,materials.polished,[x,558,z],[0,0,0],12,'Head Stud'));systems.details.add(cyl(8,7,materials.steelDark,[x,574,z],[0,0,0],6,'Hex Nut'))}}\n// V18 flywheel teeth\nconst v18FlyTeeth=new THREE.Group();v18FlyTeeth.position.set(0,dims.crankY,-337);systems.motion.add(v18FlyTeeth);for(let k=0;k<42;k++){const a=k/42*Math.PI*2,tooth=box(9,5,10,materials.steelDark,[Math.cos(a)*151,Math.sin(a)*151,0],[0,0,a],'Flywheel Tooth');v18FlyTeeth.add(tooth)}\n// V18 radiator fan overlay with denser blade geometry\nconst v18Fan=new THREE.Group();v18Fan.position.set(-316,330,0);systems.cooling.add(v18Fan);const v18FanHub=cyl(27,26,materials.steelDark,[0,0,0],[0,0,Math.PI/2],36,'Cooling Fan Hub');v18Fan.add(v18FanHub);for(let k=0;k<7;k++){const a=k/7*Math.PI*2,b=box(7,25,116,materials.black,[0,Math.cos(a)*54,Math.sin(a)*54],[a+.32,0,0],'Cooling Fan Blade');v18Fan.add(b)}info(v18FanHub,{cn:'冷却风扇',en:'Radiator Cooling Fan',mat:'增强尼龙 / 铝轮毂',fn:'强制空气穿过散热器翅片。',param:'7 叶片；转速随发动机工况变化。',state:()=> '约 '+Math.round(rpm*.78)+' rpm'},'cooling');\n// V18 turbo compressor wheel and wastegate details\nconst v18CompWheel=new THREE.Group();v18CompWheel.position.set(-14,0,0);if(typeof turbo!=='undefined'){turbo.add(v18CompWheel);for(let k=0;k<9;k++){const a=k/9*Math.PI*2,b=box(5,3,28,materials.polished,[0,Math.cos(a)*12,Math.sin(a)*12],[a,0,.25],'Compressor Blade');v18CompWheel.add(b)}const wg=tube([[60,22,0],[82,34,12],[92,4,20]],3.4,materials.brass,20);turbo.add(wg)}\n`;
+  text=text.replace('// particle flows',details+'\n// particle flows');
+
+  text=text.replace(/turboShaft\.rotation\.x\+=dt\*\(10\+load\*\.25\+rpm\/200\);/,m=>m+"v18CompWheel.rotation.x+=dt*(12+load*.30+rpm/170);v18Fan.rotation.x-=dt*rpm*.045;v18FlyTeeth.rotation.z=flywheel.rotation.z;v18CrankPulley.rotation.z=flywheel.rotation.z;v18AltPulley.rotation.z-=dt*rpm*.11;v18IdlerPulley.rotation.z+=dt*rpm*.08;");
+
+  text=text.replace(/renderer\.toneMappingExposure=([0-9.]+)/,'renderer.toneMappingExposure=.94');
+  text=text.replace(/new THREE\.PerspectiveCamera\([^;]+;/,'new THREE.PerspectiveCamera(31,1,.1,5000);');
+  text=text.replace(/camera\.position\.set\([^;]+;/,'camera.position.set(470,365,650);');
+  text=text.replace(/#viewport\{position:relative;height:\d+vh;/,'#viewport{position:relative;height:78dvh;');
+
+  const blob=new Blob([text],{type:'text/html'});document.getElementById('frame').src=URL.createObjectURL(blob);document.getElementById('msg').remove();
+ }catch(e){document.getElementById('msg').textContent='V18 载入失败：'+(e.message||e)}
+})();
+</script>
+</body></html>
