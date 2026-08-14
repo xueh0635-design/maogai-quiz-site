@@ -3,23 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>四冲程柴油机 3D 仿真 · V25 Studio PBR</title>
+<title>四冲程柴油机 3D 仿真 · V26 Geometry Detail</title>
 <style>html,body,#frame{margin:0;width:100%;height:100%;border:0;background:#02070c}#msg{position:fixed;inset:0;display:grid;place-items:center;color:#eef7ff;font:14px system-ui;text-align:center;background:#02070c;z-index:2}</style>
 </head>
 <body>
-<div id="msg">正在进入已验证的 V25 Studio PBR…</div>
+<div id="msg">正在进入 V26 · 几何精细化 + 横向工作台布局…</div>
 <iframe id="frame" title="四冲程柴油机 3D 仿真"></iframe>
 <script>
 (async()=>{try{
  const q=new URLSearchParams(location.search),v=q.get('version');
- if(!v||v==='v25'){location.replace('versions/v25-direct.html?build=v25-studio-pbr-balanced&cb=c82992bf');return}
+ if(!v||v==='v26'){location.replace('versions/v26-direct.html?build=v26-geometry-horizontal&cb=b9217d8e');return}
+ if(v==='v25'){location.replace('versions/v25-direct.html?build=v25-studio-pbr-balanced');return}
  if(['v13','v14','v15','v16','v17','v19','v20','v21','v22','v23','v24'].includes(v)){location.replace('versions/'+v+'.html');return}
  let names,base;
  if(v==='v12'){names=['part-00.txt','part-01.txt','part-02.txt','part-03.txt','part-04.txt','part-05.txt'];base='payloads/v12/'}
  else if(v==='v18'){names=Array.from({length:14},(_,i)=>'seg-'+String(i).padStart(2,'0')+'.txt');base='payloads/v18/'}
- else{location.replace('versions/v25-direct.html?build=v25-studio-pbr-balanced&cb=c82992bf');return}
+ else{location.replace('versions/v26-direct.html?build=v26-geometry-horizontal&cb=b9217d8e');return}
  const parts=[];
- for(const n of names){const r=await fetch(base+n+'?b=c82992bf',{cache:'no-store'});if(!r.ok)throw new Error(n+' HTTP '+r.status);parts.push((await r.text()).trim())}
+ for(const n of names){const r=await fetch(base+n+'?b=b9217d8e',{cache:'no-store'});if(!r.ok)throw new Error(n+' HTTP '+r.status);parts.push((await r.text()).trim())}
  const bytes=Uint8Array.from(atob(parts.join('')),c=>c.charCodeAt(0));
  if(!window.DecompressionStream)throw new Error('浏览器版本过旧，不支持 gzip 解压');
  const text=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
