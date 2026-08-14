@@ -12,9 +12,9 @@
   renderer.shadowMap.enabled=true;
   renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 
-  // Wider framing only; mobile camera remains unchanged.
+  // Full-engine framing: leave clear air around turbo, flywheel and oil sump like the target reference.
   if(!isMobileView){
-    camera.position.set(300,395,2240);
+    camera.position.set(310,390,2780);
     controls.target.set(0,295,0);
     camera.fov=31;
     camera.updateProjectionMatrix();
@@ -54,43 +54,47 @@
 
   function tunePhysical(m,opt){if(!m)return;if(opt.color!==undefined)m.color.setHex(opt.color);if(opt.roughness!==undefined)m.roughness=opt.roughness;if(opt.metalness!==undefined)m.metalness=opt.metalness;if('clearcoat' in m&&opt.clearcoat!==undefined)m.clearcoat=opt.clearcoat;if('clearcoatRoughness' in m&&opt.clearcoatRoughness!==undefined)m.clearcoatRoughness=opt.clearcoatRoughness;if('envMapIntensity' in m)m.envMapIntensity=opt.envMapIntensity===undefined?1.25:opt.envMapIntensity;m.dithering=true;m.needsUpdate=true}
 
-  // Deterministic cast-metal microtexture from the previously validated pass.
+  // Deterministic cast-metal microtexture from the validated pass.
   const nc=document.createElement('canvas');nc.width=nc.height=128;const nx=nc.getContext('2d');const ni=nx.createImageData(128,128);let seed=73129;
   for(let i=0;i<16384;i++){seed=(seed*1664525+1013904223)>>>0;const n=174+((seed>>>24)&63),j=i*4;ni.data[j]=n;ni.data[j+1]=n;ni.data[j+2]=n;ni.data[j+3]=255}
   nx.putImageData(ni,0,0);const castNoise=new THREE.CanvasTexture(nc);castNoise.wrapS=castNoise.wrapT=THREE.RepeatWrapping;castNoise.repeat.set(7,7);castNoise.minFilter=THREE.LinearFilter;castNoise.magFilter=THREE.LinearFilter;
   function castGrain(m,bump=.14){if(!m)return;m.roughnessMap=castNoise;m.bumpMap=castNoise;m.bumpScale=bump;m.needsUpdate=true}
 
-  // Pure material-value changes: darker cast body, bright machined edges, warmer brass/copper.
-  tunePhysical(refM.cast,{color:0x5e686e,roughness:.44,metalness:.78,clearcoat:.08,clearcoatRoughness:.49,envMapIntensity:.98});
-  tunePhysical(refM.castDark,{color:0x1a2024,roughness:.52,metalness:.75,clearcoat:.05,clearcoatRoughness:.56,envMapIntensity:.82});
-  tunePhysical(refM.alloy,{color:0xa3adb2,roughness:.28,metalness:.90,clearcoat:.19,clearcoatRoughness:.25,envMapIntensity:1.23});
+  // Material hierarchy: castings are dark/rough, machined faces stay bright and reflective.
+  tunePhysical(refM.cast,{color:0x4f595f,roughness:.48,metalness:.66,clearcoat:.06,clearcoatRoughness:.54,envMapIntensity:.78});
+  tunePhysical(refM.castDark,{color:0x151a1e,roughness:.57,metalness:.60,clearcoat:.03,clearcoatRoughness:.62,envMapIntensity:.60});
+  tunePhysical(refM.alloy,{color:0x89949a,roughness:.33,metalness:.82,clearcoat:.15,clearcoatRoughness:.30,envMapIntensity:.98});
   tunePhysical(refM.machined,{color:0xe1e6e9,roughness:.085,metalness:1,clearcoat:.40,clearcoatRoughness:.09,envMapIntensity:1.72});
-  tunePhysical(refM.crank,{color:0x292e32,roughness:.19,metalness:1,clearcoat:.16,clearcoatRoughness:.20,envMapIntensity:1.33});
-  tunePhysical(refM.brass,{color:0xc18a3d,roughness:.20,metalness:.96,clearcoat:.18,clearcoatRoughness:.19,envMapIntensity:1.35});
-  tunePhysical(refM.copper,{color:0xa25f34,roughness:.27,metalness:.93,clearcoat:.08,clearcoatRoughness:.31,envMapIntensity:1.20});
-  tunePhysical(refM.black,{color:0x080b0e,roughness:.78,metalness:.26,envMapIntensity:.42});
-  tunePhysical(refM.rubber,{color:0x030405,roughness:.96,metalness:.01,envMapIntensity:.10});
-  castGrain(refM.cast,.14);castGrain(refM.castDark,.16);
+  tunePhysical(refM.crank,{color:0x252a2e,roughness:.21,metalness:1,clearcoat:.14,clearcoatRoughness:.22,envMapIntensity:1.28});
+  tunePhysical(refM.brass,{color:0xc58c3c,roughness:.20,metalness:.96,clearcoat:.18,clearcoatRoughness:.19,envMapIntensity:1.35});
+  tunePhysical(refM.copper,{color:0xa86436,roughness:.27,metalness:.93,clearcoat:.08,clearcoatRoughness:.31,envMapIntensity:1.20});
+  tunePhysical(refM.black,{color:0x07090c,roughness:.80,metalness:.22,envMapIntensity:.34});
+  tunePhysical(refM.rubber,{color:0x020304,roughness:.97,metalness:.01,envMapIntensity:.08});
+  castGrain(refM.cast,.15);castGrain(refM.castDark,.17);
   refM.cut.color.setHex(0xff342a);refM.cut.opacity=1;refM.cut.needsUpdate=true;
 
   if(typeof m22!=='undefined'){
-    tunePhysical(m22.dark,{color:0x20262a,roughness:.46,metalness:.82,clearcoat:.08,clearcoatRoughness:.42,envMapIntensity:.92});
-    tunePhysical(m22.iron,{color:0x423a35,roughness:.50,metalness:.79,envMapIntensity:.90});
-    tunePhysical(m22.alloy,{color:0xa5afb4,roughness:.29,metalness:.90,clearcoat:.18,clearcoatRoughness:.25,envMapIntensity:1.22});
+    tunePhysical(m22.dark,{color:0x1a2024,roughness:.50,metalness:.68,clearcoat:.05,clearcoatRoughness:.48,envMapIntensity:.68});
+    tunePhysical(m22.iron,{color:0x37322f,roughness:.54,metalness:.65,envMapIntensity:.66});
+    tunePhysical(m22.alloy,{color:0x909ba0,roughness:.32,metalness:.82,clearcoat:.15,clearcoatRoughness:.29,envMapIntensity:1.00});
     tunePhysical(m22.steel,{color:0xd4dade,roughness:.11,metalness:1,clearcoat:.34,clearcoatRoughness:.10,envMapIntensity:1.58});
-    tunePhysical(m22.bronze,{color:0xb77d34,roughness:.22,metalness:.95,envMapIntensity:1.29});
-    tunePhysical(m22.hose,{color:0x050709,roughness:.92,metalness:.03,envMapIntensity:.13});
-    castGrain(m22.dark,.12);castGrain(m22.iron,.14);
+    tunePhysical(m22.bronze,{color:0xba7e32,roughness:.22,metalness:.95,envMapIntensity:1.29});
+    tunePhysical(m22.hose,{color:0x040608,roughness:.94,metalness:.02,envMapIntensity:.09});
+    castGrain(m22.dark,.13);castGrain(m22.iron,.15);
   }
-  if(typeof coverMat!=='undefined')tunePhysical(coverMat,{color:0x394147,roughness:.38,metalness:.84,clearcoat:.09,clearcoatRoughness:.37,envMapIntensity:.95});
-  if(typeof railBracketMat!=='undefined')tunePhysical(railBracketMat,{color:0xa17f48,roughness:.26,metalness:.89,envMapIntensity:1.19});
+  if(typeof coverMat!=='undefined')tunePhysical(coverMat,{color:0x30383d,roughness:.43,metalness:.70,clearcoat:.06,clearcoatRoughness:.42,envMapIntensity:.72});
+  if(typeof railBracketMat!=='undefined')tunePhysical(railBracketMat,{color:0xa58247,roughness:.26,metalness:.89,envMapIntensity:1.19});
 
   scene.traverse(o=>{if(!o.isMesh)return;const mats=Array.isArray(o.material)?o.material:[o.material];for(const m of mats){if(!m||!(m.isMeshStandardMaterial||m.isMeshPhysicalMaterial))continue;if('envMapIntensity'in m&&m.envMapIntensity===1)m.envMapIntensity=m.transparent?.40:(m.metalness>.75?1.26:.66);m.dithering=true;m.needsUpdate=true}});
-  if(typeof studioFloor!=='undefined')tunePhysical(studioFloor.material,{color:0x020508,roughness:.82,metalness:.08,clearcoat:.04,clearcoatRoughness:.72,envMapIntensity:.16});
 
-  const sc=document.createElement('canvas');sc.width=512;sc.height=256;const sx=sc.getContext('2d');const sg=sx.createRadialGradient(256,132,12,256,132,238);sg.addColorStop(0,'rgba(0,0,0,.92)');sg.addColorStop(.42,'rgba(0,0,0,.48)');sg.addColorStop(.78,'rgba(0,0,0,.12)');sg.addColorStop(1,'rgba(0,0,0,0)');sx.fillStyle=sg;sx.fillRect(0,0,512,256);const shadowTex=new THREE.CanvasTexture(sc);shadowTex.minFilter=THREE.LinearFilter;shadowTex.magFilter=THREE.LinearFilter;const contactShadow=new THREE.Mesh(new THREE.PlaneGeometry(920,500),new THREE.MeshBasicMaterial({map:shadowTex,transparent:true,opacity:.72,depthWrite:false,color:0x000000}));contactShadow.name='Studio Contact Shadow';contactShadow.rotation.x=-Math.PI/2;contactShadow.position.set(0,-90.6,20);contactShadow.renderOrder=1;scene.add(contactShadow);
+  // Remove the blue/grey floor wedge from the old scene without touching geometry or interaction.
+  if(typeof floor!=='undefined'&&floor.material){floor.material.color.setHex(0x010305);floor.material.roughness=.99;floor.material.metalness=.005;floor.material.needsUpdate=true}
+  if(typeof grid!=='undefined'&&grid.material){grid.material.opacity=.055;grid.material.transparent=true;grid.material.needsUpdate=true}
+  if(typeof studioFloor!=='undefined')tunePhysical(studioFloor.material,{color:0x010305,roughness:.94,metalness:.02,clearcoat:.01,clearcoatRoughness:.90,envMapIntensity:.06});
 
-  let vignette=document.getElementById('v25StudioVignette');if(!vignette){vignette=document.createElement('div');vignette.id='v25StudioVignette';vignette.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at 52% 43%,rgba(0,0,0,0) 38%,rgba(0,0,0,.07) 62%,rgba(0,0,0,.46) 100%)';viewport.appendChild(vignette)}
+  const sc=document.createElement('canvas');sc.width=512;sc.height=256;const sx=sc.getContext('2d');const sg=sx.createRadialGradient(256,132,12,256,132,238);sg.addColorStop(0,'rgba(0,0,0,.94)');sg.addColorStop(.42,'rgba(0,0,0,.52)');sg.addColorStop(.78,'rgba(0,0,0,.13)');sg.addColorStop(1,'rgba(0,0,0,0)');sx.fillStyle=sg;sx.fillRect(0,0,512,256);const shadowTex=new THREE.CanvasTexture(sc);shadowTex.minFilter=THREE.LinearFilter;shadowTex.magFilter=THREE.LinearFilter;const contactShadow=new THREE.Mesh(new THREE.PlaneGeometry(1040,560),new THREE.MeshBasicMaterial({map:shadowTex,transparent:true,opacity:.74,depthWrite:false,color:0x000000}));contactShadow.name='Studio Contact Shadow';contactShadow.rotation.x=-Math.PI/2;contactShadow.position.set(0,-90.6,20);contactShadow.renderOrder=1;scene.add(contactShadow);
+
+  let vignette=document.getElementById('v25StudioVignette');if(!vignette){vignette=document.createElement('div');vignette.id='v25StudioVignette';vignette.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at 52% 43%,rgba(0,0,0,0) 39%,rgba(0,0,0,.07) 63%,rgba(0,0,0,.47) 100%)';viewport.appendChild(vignette)}
   const badge=document.querySelector('.qualityBadge');if(badge)badge.textContent='V25 · REFERENCE STUDIO PBR';
   window.__v25VisualDebug={enabled:true,environment:!!scene.environment,exposure:renderer.toneMappingExposure,machinedRoughness:refM.machined.roughness,machinedEnv:refM.machined.envMapIntensity,castRoughness:refM.cast.roughness,brassMetalness:refM.brass.metalness,contactShadow:!!contactShadow,vignette:!!vignette,castMicrotexture:!!refM.cast.bumpMap,cameraPosition:camera.position.toArray(),cameraTarget:controls.target.toArray(),cameraFov:camera.fov};
 })();
