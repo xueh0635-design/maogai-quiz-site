@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>四冲程柴油机 3D 仿真 · V14</title>
+  <title>四冲程柴油机 3D 仿真 · V15</title>
   <style>
     html,body,#frame{margin:0;width:100%;height:100%;border:0;background:#03070b}
     #msg{position:fixed;inset:0;display:grid;place-items:center;color:#eef7ff;font:14px system-ui;text-align:center;background:#03070b;z-index:2}
   </style>
 </head>
 <body>
-<div id="msg">正在载入柴油机 3D 仿真 v14 · Mechanical Coherence…</div>
+<div id="msg">正在载入柴油机 3D 仿真 v15 · Crankshaft Geometry Fix…</div>
 <iframe id="frame" title="四冲程柴油机 3D 仿真"></iframe>
 <script>
 (async()=>{
@@ -20,7 +20,7 @@
       location.replace('versions/v13.html');
       return;
     }
-    const target=requested==='v12'?'v12':'v14';
+    const target=requested==='v12'?'v12':requested==='v14'?'v14':'v15';
     const names=['part-00.txt','part-01.txt','part-02.txt','part-03.txt','part-04.txt','part-05.txt'];
     const parts=[];
     for(const n of names){
@@ -37,10 +37,6 @@
       text=text.replaceAll('v12','v14').replaceAll('V12','V14');
       text=text.replace('GitHub stable · v14 · BALANCED PBR','GitHub stable · v14 · MECHANICAL COHERENCE');
 
-      /* V14: keep the proven V12 kinematics / flow / charts intact.
-         Only remove the mechanically invalid thick transverse shaft seen in the
-         mid-height cylinder/rod region.  Do NOT add another valvetrain architecture
-         on top of the existing model; V13 remains preserved as a historical version. */
       const patch=`<script>(()=>{
         const apply=()=>{
           try{
@@ -56,9 +52,6 @@
                 const {s,c}=info(o),gp=o.geometry.parameters||{};
                 const radius=Math.max(Number(gp.radiusTop||0),Number(gp.radiusBottom||0),Number(gp.radius||0));
                 const h=Number(gp.height||0);
-                /* Exact defect signature from the user screenshot:
-                   long left-right cylinder, thick section, central Z band,
-                   above crankcase and below the head. */
                 const invalidCenterShaft=
                   s.x>320 && s.y<120 && s.z<120 &&
                   c.y>175 && c.y<325 && Math.abs(c.z)<95 &&
@@ -68,8 +61,6 @@
             });
             for(const q of shafts){
               q.o.visible=false;hidden.push(q.o);
-              /* Remove only boss/disc cylinders sharing the same erroneous axis.
-                 This avoids leaving the floating collars that were visible around it. */
               if(q.o.parent)q.o.parent.traverse(sib=>{
                 if(!sib?.isMesh||sib===q.o||!sib.geometry)return;
                 try{
@@ -83,11 +74,41 @@
               });
             }
             console.info('[Diesel V14] invalid center shaft candidates:',shafts.length,'hidden objects:',hidden.length);
-            /* Preserve V12 balanced lighting.  V13's extra lights and additive DOHC
-               carrier are intentionally not injected in V14. */
             if(typeof renderer!=='undefined'&&renderer.toneMappingExposure>1.12)renderer.toneMappingExposure=1.06;
             if(typeof camera!=='undefined'&&matchMedia('(max-width:900px)').matches){camera.fov=Math.min(camera.fov,34);camera.updateProjectionMatrix()}
           }catch(e){console.warn('V14 mechanical coherence patch',e)}
+        };
+        setTimeout(apply,120);
+      })()<\/script>`;
+      text=text.replace('</body>',patch+'</body>');
+    }
+
+    if(target==='v15'){
+      text=text.replaceAll('v12','v15').replaceAll('V12','V15');
+      text=text.replace('GitHub stable · v15 · CAMSHAFT FIX · CLEAR VIEW','GitHub stable · v15 · CRANKSHAFT GEOMETRY FIX · CLEAR VIEW');
+      const patch=`<script>(()=>{
+        const apply=()=>{
+          try{
+            if(typeof THREE==='undefined'||typeof scene==='undefined') return setTimeout(apply,120);
+            const old=scene.getObjectByName('Main Crankshaft');
+            if(!old||!old.parent){console.warn('[Diesel V15] Main Crankshaft object not found');return;}
+            const parent=old.parent, mat=old.material, y=old.position.y;
+            const oldMeta=old.userData&&old.userData.meta?old.userData.meta:null;
+            parent.remove(old);
+            old.geometry?.dispose?.();
+            const group=new THREE.Group();group.name='Crankshaft Main Journal Set';parent.add(group);
+            const journals=[];
+            const addJournal=(r,h,z,name)=>{
+              const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,40),mat);
+              m.position.set(0,y,z);m.rotation.x=Math.PI/2;m.name=name;m.castShadow=true;m.receiveShadow=true;group.add(m);journals.push(m);return m;
+            };
+            [-224,-112,0,112,224].forEach((z,i)=>addJournal(24,34,z,'Main Journal '+(i+1)));
+            addJournal(18,30,-280,'Crankshaft End Journal A');
+            addJournal(18,30,280,'Crankshaft End Journal B');
+            const meta={cn:'曲轴主轴系',en:'Crankshaft Main Journals',mat:'42CrMo 模锻钢 / 调质 + 滚压 + 磨削',fn:'由分离主轴颈、曲柄臂、连杆颈和配重共同形成真实曲拐，不再使用贯穿发动机的实心圆管。',param:'5 道独立主轴颈 Ø48×34 mm（示意）；曲柄半径 52.5 mm；行程 105 mm。',state:()=>typeof rpm!=='undefined'?'旋转 '+rpm+' rpm；全局曲轴角 '+Math.round(angle)+'°':'曲轴主轴颈'};
+            try{if(typeof info==='function')info(group,meta,'motion');else journals.forEach(m=>{m.userData.meta=meta;m.userData.system='motion'})}catch(e){journals.forEach(m=>{m.userData.meta=oldMeta||meta;m.userData.system='motion'})}
+            console.info('[Diesel V15] removed incorrect 560-mm solid crank tube; installed',journals.length,'segmented journals');
+          }catch(e){console.warn('V15 crankshaft geometry fix',e)}
         };
         setTimeout(apply,120);
       })()<\/script>`;
