@@ -1,0 +1,1 @@
+V17 acceptance status: static validation passed; real iPhone Safari / desktop Chrome visual and sustained FPS remain unverified; benchmark superiority not claimed.

@@ -3,152 +3,27 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>四冲程柴油机 3D 仿真 · V16</title>
-  <style>
-    html,body,#frame{margin:0;width:100%;height:100%;border:0;background:#03070b}
-    #msg{position:fixed;inset:0;display:grid;place-items:center;color:#eef7ff;font:14px system-ui;text-align:center;background:#03070b;z-index:2}
-  </style>
+  <title>四冲程柴油机 3D 仿真 · V17</title>
+  <style>html,body,#frame{margin:0;width:100%;height:100%;border:0;background:#03070b}#msg{position:fixed;inset:0;display:grid;place-items:center;color:#eef7ff;font:14px system-ui;text-align:center;background:#03070b;z-index:2}</style>
 </head>
 <body>
-<div id="msg">正在载入柴油机 3D 仿真 v16 · Camshaft Geometry Rebuild…</div>
+<div id="msg">正在载入柴油机 3D 仿真 v17 · CAD-Like Cutaway…</div>
 <iframe id="frame" title="四冲程柴油机 3D 仿真"></iframe>
 <script>
 (async()=>{
   try{
-    const requested=new URLSearchParams(location.search).get('version');
-    if(requested==='v13'){
-      location.replace('versions/v13.html');
-      return;
-    }
-    const target=requested==='v12'?'v12':requested==='v14'?'v14':requested==='v15'?'v15':'v16';
+    const q=new URLSearchParams(location.search), requested=q.get('version');
+    if(['v13','v14','v15','v16'].includes(requested)){location.replace('versions/'+requested+'.html');return;}
+    const target=requested==='v12'?'v12':'v17';
     const names=['part-00.txt','part-01.txt','part-02.txt','part-03.txt','part-04.txt','part-05.txt'];
     const parts=[];
-    for(const n of names){
-      const r=await fetch('payloads/v12/'+n,{cache:'no-store'});
-      if(!r.ok) throw new Error(n+' HTTP '+r.status);
-      parts.push((await r.text()).trim());
-    }
-    const encoded=parts.join('');
-    const bytes=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));
-    if(!window.DecompressionStream) throw new Error('浏览器版本过旧，不支持 gzip 解压');
-    let text=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
-
-    if(target==='v16'){
-      text=text.replaceAll('v12','v16').replaceAll('V12','V16');
-      text=text.replace('GitHub stable · v16 · CAMSHAFT FIX · CLEAR VIEW','GitHub stable · v16 · CAMSHAFT REBUILT · CRANKSHAFT FIX');
-
-      /* V16 modifies the decoded payload source BEFORE it executes. */
-      const crankReplacement=`const crankCore=new THREE.Group();crankCore.name='Crankshaft Main Journal Set';systems.motion.add(crankCore);for(const [jz,jr,jh] of [[-224,24,34],[-112,24,34],[0,24,34],[112,24,34],[224,24,34],[-280,18,30],[280,18,30]]){const j=cyl(jr,jh,materials.polished,[0,dims.crankY,jz],[Math.PI/2,0,0],40,'Crankshaft Journal');crankCore.add(j)}info(crankCore,{cn:'曲轴主轴系',en:'Crankshaft Main Journals',mat:'42CrMo 模锻钢 / 调质 + 滚压 + 磨削',fn:'由分离主轴颈、曲柄臂、连杆颈和配重形成真实曲拐；不再使用贯穿式实心圆管。',param:'5 道独立主轴颈；曲柄半径 52.5 mm；行程 105 mm。',state:()=> '旋转 '+rpm+' rpm；全局曲轴角 '+Math.round(angle)+'°'},'motion');\nconst flywheel=`;
-      text=text.replace(/const crankCore=[\s\S]*?\nconst flywheel=/,crankReplacement);
-
-      const camLobeReplacement=`function camLobe(z,phase=0){const sh=new THREE.Shape(),N=64,baseR=7.6,noseR=14.2;for(let i=0;i<N;i++){const a=i/N*Math.PI*2,c=Math.max(0,Math.cos(a)),r=baseR+(noseR-baseR)*Math.pow(c,3.7),x=r*Math.cos(a),y=r*Math.sin(a);i?sh.lineTo(x,y):sh.moveTo(x,y)}sh.closePath();const geo=new THREE.ExtrudeGeometry(sh,{depth:8,bevelEnabled:true,bevelSize:.5,bevelThickness:.5,bevelSegments:2,curveSegments:20});geo.translate(0,0,-4);const o=mesh(geo,materials.steelDark,[0,0,z],[0,0,phase],'Cam Lobe');o.castShadow=true;o.receiveShadow=true;return o;}\nfunction alignY`;
-      text=text.replace(/function camLobe[\s\S]*?\nfunction alignY/,camLobeReplacement);
-
-      const camReplacement=`// camshaft and timing gears — v16: compact side-mounted OHV camshaft\nconst camshaftGroup=new THREE.Group();camshaftGroup.position.set(108,240,0);camshaftGroup.name='Camshaft Assembly';systems.valve.add(camshaftGroup);\nconst camshaft=cyl(4.8,470,materials.steelDark,[0,0,0],[Math.PI/2,0,0],32,'Camshaft Core');camshaftGroup.add(camshaft);info(camshaft,{cn:'凸轮轴',en:'Camshaft',mat:'冷硬铸铁 / 凸轮磨削',fn:'以曲轴 1/2 转速驱动四缸进排气门；细轴芯位于缸体侧部凸轮轴孔内。',param:'细轴芯 Ø9.6 mm（视觉比例）+ 8 个桃形凸轮 + 5 道轴颈；明确区别于贯穿式粗圆管。',state:()=> '转速 '+(rpm/2).toFixed(0)+' rpm；相位 '+((angle/2)%360).toFixed(0)+'°'},'valve');\nfor(const jz of [-224,-112,0,112,224])camshaftGroup.add(cyl(7.2,12,materials.polished,[0,0,jz],[Math.PI/2,0,0],28,'Cam Journal'));\nconst crankGear=`;
-      text=text.replace(/\/\/ camshaft and timing gears[\s\S]*?\nconst crankGear=/,camReplacement);
-
-      text=text.replace('</body>',`<div style="position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:9999;padding:5px 10px;border:1px solid rgba(82,190,255,.55);border-radius:999px;background:rgba(4,13,20,.80);color:#c8efff;font:12px system-ui;pointer-events:none">V16 · 凸轮轴已重建</div></body>`);
-    }
-
-    if(target==='v14'){
-      text=text.replaceAll('v12','v14').replaceAll('V12','V14');
-      text=text.replace('GitHub stable · v14 · BALANCED PBR','GitHub stable · v14 · MECHANICAL COHERENCE');
-
-      const patch=`<script>(()=>{
-        const apply=()=>{
-          try{
-            if(typeof THREE==='undefined'||typeof scene==='undefined') return setTimeout(apply,120);
-            const info=o=>{const b=new THREE.Box3().setFromObject(o),s=new THREE.Vector3(),c=new THREE.Vector3();b.getSize(s);b.getCenter(c);return{s,c}};
-            const hidden=[];
-            const shafts=[];
-            scene.traverse(o=>{
-              if(!o?.isMesh||!o.geometry)return;
-              try{
-                const type=String(o.geometry.type||'').toLowerCase();
-                if(!type.includes('cylinder'))return;
-                const {s,c}=info(o),gp=o.geometry.parameters||{};
-                const radius=Math.max(Number(gp.radiusTop||0),Number(gp.radiusBottom||0),Number(gp.radius||0));
-                const h=Number(gp.height||0);
-                const invalidCenterShaft=
-                  s.x>320 && s.y<120 && s.z<120 &&
-                  c.y>175 && c.y<325 && Math.abs(c.z)<95 &&
-                  h>280 && radius>=18;
-                if(invalidCenterShaft)shafts.push({o,s,c});
-              }catch(e){}
-            });
-            for(const q of shafts){
-              q.o.visible=false;hidden.push(q.o);
-              if(q.o.parent)q.o.parent.traverse(sib=>{
-                if(!sib?.isMesh||sib===q.o||!sib.geometry)return;
-                try{
-                  if(!String(sib.geometry.type||'').toLowerCase().includes('cylinder'))return;
-                  const z=info(sib);
-                  const sameAxis=Math.abs(z.c.y-q.c.y)<38&&Math.abs(z.c.z-q.c.z)<45;
-                  const collar=z.s.x<125&&z.s.y<110&&z.s.z<110&&Math.max(z.s.y,z.s.z)>24;
-                  const withinSpan=Math.abs(z.c.x-q.c.x)<q.s.x*.58;
-                  if(sameAxis&&collar&&withinSpan){sib.visible=false;hidden.push(sib)}
-                }catch(e){}
-              });
-            }
-            console.info('[Diesel V14] invalid center shaft candidates:',shafts.length,'hidden objects:',hidden.length);
-            if(typeof renderer!=='undefined'&&renderer.toneMappingExposure>1.12)renderer.toneMappingExposure=1.06;
-            if(typeof camera!=='undefined'&&matchMedia('(max-width:900px)').matches){camera.fov=Math.min(camera.fov,34);camera.updateProjectionMatrix()}
-          }catch(e){console.warn('V14 mechanical coherence patch',e)}
-        };
-        setTimeout(apply,120);
-      })()<\/script>`;
-      text=text.replace('</body>',patch+'</body>');
-    }
-
-    if(target==='v15'){
-      text=text.replaceAll('v12','v15').replaceAll('V12','V15');
-      text=text.replace('GitHub stable · v15 · CAMSHAFT FIX · CLEAR VIEW','GitHub stable · v15 · CRANKSHAFT GEOMETRY FIX · CLEAR VIEW');
-      const patch=`<script>(()=>{
-        const apply=()=>{
-          try{
-            if(typeof THREE==='undefined'||typeof scene==='undefined') return setTimeout(apply,120);
-            const old=scene.getObjectByName('Main Crankshaft');
-            if(!old||!old.parent){console.warn('[Diesel V15] Main Crankshaft object not found');return;}
-            const parent=old.parent, mat=old.material, y=old.position.y;
-            const oldMeta=old.userData&&old.userData.meta?old.userData.meta:null;
-            old.visible=false;
-            try{
-              if(typeof interactives!=='undefined'){
-                for(let i=interactives.length-1;i>=0;i--){if(interactives[i]===old)interactives.splice(i,1)}
-              }
-            }catch(e){}
-            parent.remove(old);
-            const group=new THREE.Group();group.name='Crankshaft Main Journal Set';parent.add(group);
-            const journals=[];
-            const addJournal=(r,h,z,name)=>{
-              const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,40),mat);
-              m.position.set(0,y,z);m.rotation.x=Math.PI/2;m.name=name;m.castShadow=true;m.receiveShadow=true;group.add(m);journals.push(m);return m;
-            };
-            [-224,-112,0,112,224].forEach((z,i)=>addJournal(24,34,z,'Main Journal '+(i+1)));
-            addJournal(18,30,-280,'Crankshaft End Journal A');
-            addJournal(18,30,280,'Crankshaft End Journal B');
-            const meta={cn:'曲轴主轴系',en:'Crankshaft Main Journals',mat:'42CrMo 模锻钢 / 调质 + 滚压 + 磨削',fn:'由分离主轴颈、曲柄臂、连杆颈和配重共同形成真实曲拐，不再使用贯穿发动机的实心圆管。',param:'5 道独立主轴颈 Ø48×34 mm（示意）；曲柄半径 52.5 mm；行程 105 mm。',state:()=>typeof rpm!=='undefined'?'旋转 '+rpm+' rpm；全局曲轴角 '+Math.round(angle)+'°':'曲轴主轴颈'};
-            try{if(typeof info==='function')info(group,meta,'motion');else journals.forEach(m=>{m.userData.meta=meta;m.userData.system='motion'})}catch(e){journals.forEach(m=>{m.userData.meta=oldMeta||meta;m.userData.system='motion'})}
-            const badge=document.createElement('div');
-            badge.textContent='V15 · 曲轴几何已修正';
-            badge.style.cssText='position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:9999;padding:6px 10px;border:1px solid rgba(82,190,255,.5);border-radius:999px;background:rgba(4,13,20,.76);color:#c8efff;font:12px system-ui;pointer-events:none;backdrop-filter:blur(8px)';
-            document.body.appendChild(badge);
-            setTimeout(()=>badge.remove(),6500);
-            console.info('[Diesel V15] removed incorrect 560-mm solid crank tube; installed',journals.length,'segmented journals');
-          }catch(e){console.warn('V15 crankshaft geometry fix',e)}
-        };
-        setTimeout(apply,120);
-      })()<\/script>`;
-      text=text.replace('</body>',patch+'</body>');
-    }
-
-    const url=URL.createObjectURL(new Blob([text],{type:'text/html'}));
-    document.getElementById('frame').src=url;
+    for(const n of names){const r=await fetch('payloads/'+target+'/'+n+'?b=202608150232',{cache:'no-store'});if(!r.ok)throw new Error(n+' HTTP '+r.status);parts.push((await r.text()).trim())}
+    const bytes=Uint8Array.from(atob(parts.join('')),c=>c.charCodeAt(0));
+    if(!window.DecompressionStream)throw new Error('浏览器版本过旧，不支持 gzip 解压');
+    const text=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+    document.getElementById('frame').src=URL.createObjectURL(new Blob([text],{type:'text/html'}));
     document.getElementById('msg').remove();
-  }catch(e){
-    document.getElementById('msg').textContent='载入失败：'+(e.message||e);
-  }
+  }catch(e){document.getElementById('msg').textContent='载入失败：'+(e.message||e)}
 })();
 </script>
-</body>
-</html>
+</body></html>
