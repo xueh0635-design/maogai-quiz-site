@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>直列四缸柴油机 · V28 True Section Geometry</title>
+<style>html,body,#stage{margin:0;width:100%;height:100%;border:0;background:#02070c;overflow:hidden}#boot{position:fixed;inset:0;display:grid;place-items:center;z-index:8;background:#02070c;color:#dff4ff;font:14px system-ui}</style>
+</head><body><div id="boot">正在进入 V28 · 实体半壳剖切 + 内部机械细节…</div><iframe id="stage" src="v27-direct.html?v28base=1" title="V28 柴油机 3D 仿真"></iframe>
+<script>
+const outer=document.getElementById('stage');
+outer.addEventListener('load',()=>setTimeout(applyV28,2600));
+function deepest(){let f=outer,w=f.contentWindow,d=f.contentDocument;for(let i=0;i<4;i++){const n=d&&d.getElementById('stage');if(!n)break;f=n;w=f.contentWindow;d=f.contentDocument}return{w,d}}
+function applyV28(){
+ const q=deepest(),w=q.w,d=q.d,T=w&&w.THREE,p=w&&w.__v25PatchDebug;
+ if(!T||!p||!p.refRoot){document.getElementById('boot').textContent='V28 正在等待三维基础层…';setTimeout(applyV28,1000);return}
+ const style=d.createElement('style');style.textContent=`
+ #leftPanel{width:212px!important;bottom:146px!important}#rightPanel{width:222px!important;bottom:146px!important}
+ #bottomDock{left:238px!important;right:248px!important;min-height:118px!important}
+ #topbar{height:50px!important}.topActions button{padding:6px 7px!important;font-size:10px!important}
+ #v27Mode,#v26Mode{display:none!important}.refCallout{font-size:10px!important;min-width:98px!important;max-width:142px!important}
+ #viewport{background:radial-gradient(ellipse at 50% 42%,#173047 0%,#08141f 52%,#010407 100%)!important}
+ @media(max-width:1180px){#leftPanel{width:196px!important}#rightPanel{width:202px!important}#bottomDock{left:220px!important;right:226px!important}}
+ `;d.head.appendChild(style);
+ const badge=d.querySelector('.qualityBadge');if(badge)badge.textContent='V28 · TRUE SECTION · 4-CYL INTERNALS';
+ const dep=d.getElementById('deployBadge');if(dep)dep.textContent='GitHub stable · v28 · TRUE HALF-SHELL CUTAWAY · GEOMETRY FIRST';
+ const scene=p.refRoot.parent,details=p.refDetails,motion=p.refMotion,valve=p.refValve,fuel=p.refFuel,gas=p.refGas;
+ const M={cast:new T.MeshPhysicalMaterial({color:0x555d62,roughness:.43,metalness:.78,clearcoat:.08}),dark:new T.MeshPhysicalMaterial({color:0x24292d,roughness:.44,metalness:.84}),steel:new T.MeshPhysicalMaterial({color:0xdde3e6,roughness:.09,metalness:1,clearcoat:.38,clearcoatRoughness:.08}),alloy:new T.MeshPhysicalMaterial({color:0xbfc7ca,roughness:.22,metalness:.92,clearcoat:.2}),brass:new T.MeshPhysicalMaterial({color:0xb38442,roughness:.2,metalness:.95}),bronze:new T.MeshPhysicalMaterial({color:0x9b6f39,roughness:.27,metalness:.9}),section:new T.MeshBasicMaterial({color:0xff392e,transparent:true,opacity:.96,depthTest:false})};
+ function mesh(g,m,pos=[0,0,0],rot=[0,0,0],name=''){const o=new T.Mesh(g,m);o.position.set(...pos);o.rotation.set(...rot);o.castShadow=o.receiveShadow=true;o.name=name;return o}
+ function box(x,y,z,m,pos,rot=[0,0,0],name=''){return mesh(new T.BoxGeometry(x,y,z,2,2,2),m,pos,rot,name)}
+ function cyl(r,h,m,pos,rot=[0,0,0],name='',seg=44){return mesh(new T.CylinderGeometry(r,r,h,seg),m,pos,rot,name)}
+ function torus(R,r,m,pos,rot=[0,0,0],name=''){return mesh(new T.TorusGeometry(R,r,12,56),m,pos,rot,name)}
+ function tube(points,r,m,name=''){const c=new T.CatmullRomCurve3(points.map(v=>new T.Vector3(...v)));return mesh(new T.TubeGeometry(c,56,r,10,false),m,[0,0,0],[0,0,0],name)}
+ const X=[-180,-60,60,180];
+ // Replace visually closed castings with an explicit front-open half-shell. Rear material remains as a real wall behind the mechanism.
+ details.traverse(o=>{if(!o.isMesh)return;if(['Cylinder Deck','Cylinder Head','Oil Sump','Cam Carrier','Crankcase Front Cover','Crankcase Rear Wall'].includes(o.name))o.visible=false;if(o.name==='Cylinder Liner'){o.material.transparent=true;o.material.opacity=.075;o.material.depthWrite=false}});
+ const shell=new T.Group();shell.name='V28 True Half Shell';scene.add(shell);
+ // Rear crankcase wall, side cheeks, deck rails and lower sump rails: all leave the +Z face physically open.
+ shell.add(box(620,350,28,M.cast,[0,250,-130],[0,0,0],'Rear Crankcase Half Wall'));
+ shell.add(box(46,350,245,M.cast,[-310,250,-7],[0,0,0],'LH Section Cheek'),box(46,350,245,M.cast,[310,250,-7],[0,0,0],'RH Section Cheek'));
+ shell.add(box(650,54,70,M.alloy,[0,440,-92],[0,0,0],'Rear Deck Half'),box(650,18,38,M.alloy,[0,455,110],[0,0,0],'Front Deck Section Lip'));
+ shell.add(box(650,78,70,M.alloy,[0,505,-92],[0,0,0],'Rear Head Half'));
+ shell.add(box(52,88,170,M.alloy,[-304,505,-18],[0,0,0],'LH Head Cut Wall'),box(52,88,170,M.alloy,[304,505,-18],[0,0,0],'RH Head Cut Wall'));
+ shell.add(box(620,36,70,M.dark,[0,566,-92],[0,0,0],'Rear Cam Carrier Half'));
+ shell.add(box(690,92,62,M.dark,[0,10,-114],[0,0,0],'Rear Sump Half'),box(54,105,220,M.dark,[-316,15,-10],[0,0,0],'LH Sump Cut Wall'),box(54,105,220,M.dark,[316,15,-10],[0,0,0],'RH Sump Cut Wall'));
+ // High-contrast machined section faces and edge lips.
+ const cuts=new T.Group();cuts.name='V28 Machined Section Faces';scene.add(cuts);
+ for(const x of [-332,332]){const e=box(7,355,7,M.section,[x,250,116],[0,0,0],'Crankcase Cut Edge');e.renderOrder=9;cuts.add(e)}
+ for(const y of [455,548]){const e=box(650,6,7,M.section,[0,y,116],[0,0,0],'Head Deck Cut Edge');e.renderOrder=9;cuts.add(e)}
+ const sumpLip=box(690,6,7,M.section,[0,65,103],[0,0,0],'Sump Cut Edge');sumpLip.renderOrder=9;cuts.add(sumpLip);
+ // Four piston packages: skirt relief windows, pin bosses, ring lands and crown bowl detail remain readable in motion.
+ for(const x of X){
+  motion.add(torus(15,4,M.steel,[x,306,0],[Math.PI/2,0,0],'Piston Pin Boss Outer'));
+  motion.add(torus(20,2.3,M.dark,[x,349,0],[Math.PI/2,0,0],'Combustion Bowl Rim Detail'));
+  for(const dy of [333,339,345])motion.add(torus(44,1.15,M.steel,[x,dy,0],[Math.PI/2,0,0],'Piston Ring Detail'));
+  // Big-end bearing shells and cap hardware around the nominal rod-journal zone.
+  motion.add(torus(24,3.2,M.bronze,[x,153,0],[Math.PI/2,0,0],'Big End Bearing Shell'));
+  for(const z of [-18,18])motion.add(cyl(3.4,18,M.steel,[x,137,z],[Math.PI/2,0,0],'Connecting Rod Cap Bolt',14));
+ }
+ // Main bearing saddles, bearing shells and oil-feed drillings under the crankshaft.
+ for(const x of [-260,-130,0,130,260]){details.add(torus(25,3.4,M.bronze,[x,105,0],[0,Math.PI/2,0],'Main Bearing Shell'));details.add(cyl(3.2,34,M.brass,[x,105,-24],[Math.PI/2,0,0],'Main Bearing Oil Drilling',14))}
+ // Valve-seat and injector-nozzle region: 16 valve seats plus four nozzle tips and clamp bridges.
+ for(const x of X){
+  for(const z of [-34,34])for(const dx of [-18,18]){valve.add(torus(13,2.1,M.steel,[x+dx,478,z],[Math.PI/2,0,0],'Valve Seat Insert'));valve.add(cyl(3.4,24,M.steel,[x+dx,492,z],[0,0,0],'Valve Stem Lower',18))}
+  fuel.add(cyl(3.0,34,M.steel,[x,487,0],[0,0,0],'Injector Nozzle Tip',20));fuel.add(torus(8,1.6,M.brass,[x,503,0],[Math.PI/2,0,0],'Injector Copper Washer'));
+ }
+ // Extra common-rail hardware: support feet, pressure limiter, hex unions and rigid individual lines.
+ const railSupport=new T.Group();railSupport.name='V28 Rail Hardware';fuel.add(railSupport);
+ for(const x of X){railSupport.add(box(28,18,62,M.dark,[x,648,78],[0,0,0],'Rail Foot'));railSupport.add(cyl(6.5,11,M.steel,[x,658,105],[0,0,0],'Rail Foot Bolt',12));railSupport.add(tube([[x,667,86],[x+8,641,70],[x+10,610,42],[x,575,10]],3.0,M.brass,'Rigid HP Injector Pipe'))}
+ railSupport.add(cyl(13,38,M.brass,[325,667,86],[0,0,Math.PI/2],'Rail Pressure Limiter',24));
+ // Exhaust flange density and turbo mounting junctions.
+ for(const x of X){gas.add(box(52,46,7,M.dark,[x,468,-72],[0,0,0],'Machined Exhaust Flange'));for(const dx of [-18,18])gas.add(cyl(3.4,18,M.steel,[x+dx,468,-84],[Math.PI/2,0,0],'Exhaust Flange Stud',12))}
+ gas.add(torus(34,4,M.steel,[290,420,-143],[0,Math.PI/2,0],'Turbo Inlet V-band Detail'));
+ // Oil-system fittings around the full-flow filter and galleries.
+ details.add(cyl(15,20,M.brass,[266,176,148],[0,0,Math.PI/2],'Oil Banjo Union'));details.add(cyl(15,20,M.brass,[334,176,148],[0,0,Math.PI/2],'Oil Outlet Union'));
+ details.add(tube([[266,176,148],[222,167,140],[150,143,130],[40,118,123],[-90,108,125]],4.8,M.brass,'Rigid Oil Feed Line'));
+ details.add(tube([[334,176,148],[276,190,140],[195,185,133],[112,155,126]],4.4,M.brass,'Rigid Oil Return Line'));
+ // Force the reference-like default presentation: true front cutaway first, with the full engine fitting between the side panels.
+ const front=d.querySelector('[data-view="front"]');if(front){front.click();front.textContent='剖视正面'}
+ const camera=[...scene.children].find(o=>o.isCamera);if(camera){camera.position.set(0,330,1500);camera.fov=30;camera.updateProjectionMatrix()}
+ const cut=d.getElementById('cutaway');if(cut&&!cut.classList.contains('active'))cut.click();
+ const mode=d.createElement('div');mode.id='v28Mode';mode.textContent='V28 · 实体半壳剖切：四活塞 / 四连杆 / 曲轴 / 主轴承直接可读';mode.style.cssText='position:absolute;top:68px;left:50%;transform:translateX(-50%);z-index:4;padding:5px 11px;border:1px solid rgba(48,173,255,.5);border-radius:999px;background:rgba(2,9,15,.74);color:#bce8ff;font:10px system-ui;pointer-events:none';d.getElementById('app').appendChild(mode);
+ w.__v28Debug={ready:true,trueHalfShell:true,openFront:true,sectionFaces:cuts.children.length,pistonDetail:true,bearingDetail:true,valveSeatDetail:true,railHardware:true,oilFittings:true,defaultFrontCutaway:true};
+ document.getElementById('boot').remove();
+}
+</script></body></html>
