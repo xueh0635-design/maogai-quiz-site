@@ -3,16 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>四冲程柴油机 3D 仿真 · V30 Complex Mechanical Rebuild</title>
+<title>四冲程柴油机 3D 仿真 · V31 Port/Timing Mechanical Rebuild</title>
 <style>html,body,#frame{margin:0;width:100%;height:100%;border:0;background:#02070c}#msg{position:fixed;inset:0;display:grid;place-items:center;color:#eef7ff;font:14px system-ui;text-align:center;background:#02070c;z-index:2}</style>
 </head>
 <body>
-<div id="msg">正在进入 V30 · 高复杂度机械总成重构…</div>
+<div id="msg">正在进入 V31 · 气道 / 燃烧室 / 正时传动 / 管路接头重构…</div>
 <iframe id="frame" title="四冲程柴油机 3D 仿真"></iframe>
 <script>
 (async()=>{try{
  const q=new URLSearchParams(location.search),v=q.get('version');
- if(!v||v==='v30'){location.replace('versions/v30-rebuild.html?build=v30-complex-rebuild&cb=e6c15abd');return}
+ if(!v||v==='v31'){location.replace('versions/v31-port-timing.html?build=v31-port-timing&cb=096dbf29');return}
+ if(v==='v30'){location.replace('versions/v30-rebuild.html?build=v30-complex-rebuild');return}
  if(v==='v29'){location.replace('versions/v29-direct.html?build=v29-studio-pbr-r2&cb=v29mat2');return}
  if(v==='v28'){location.replace('versions/v28-direct.html?build=v28-true-section');return}
  if(v==='v27'){location.replace('versions/v27-direct.html?build=v27-cutaway-geometry');return}
@@ -22,9 +23,9 @@
  let names,base;
  if(v==='v12'){names=['part-00.txt','part-01.txt','part-02.txt','part-03.txt','part-04.txt','part-05.txt'];base='payloads/v12/'}
  else if(v==='v18'){names=Array.from({length:14},(_,i)=>'seg-'+String(i).padStart(2,'0')+'.txt');base='payloads/v18/'}
- else{location.replace('versions/v30-rebuild.html?build=v30-complex-rebuild&cb=e6c15abd');return}
+ else{location.replace('versions/v31-port-timing.html?build=v31-port-timing&cb=096dbf29');return}
  const parts=[];
- for(const n of names){const r=await fetch(base+n+'?b=e6c15abd',{cache:'no-store'});if(!r.ok)throw new Error(n+' HTTP '+r.status);parts.push((await r.text()).trim())}
+ for(const n of names){const r=await fetch(base+n+'?b=096dbf29',{cache:'no-store'});if(!r.ok)throw new Error(n+' HTTP '+r.status);parts.push((await r.text()).trim())}
  const bytes=Uint8Array.from(atob(parts.join('')),c=>c.charCodeAt(0));
  if(!window.DecompressionStream)throw new Error('浏览器版本过旧，不支持 gzip 解压');
  const text=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
