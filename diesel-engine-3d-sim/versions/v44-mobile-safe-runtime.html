@@ -1,0 +1,14 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>直列四缸柴油机 · V44 Mobile-safe Runtime</title><style>html,body,#stage{margin:0;width:100%;height:100%;border:0;background:#02070c;overflow:hidden}#boot{position:fixed;inset:0;display:grid;place-items:center;z-index:200;background:#02070c;color:#dff4ff;font:14px system-ui;text-align:center;padding:24px;transition:opacity .22s ease}</style></head><body><div id="boot">正在进入 V44 · 移动端安全启动 / CAD 总成恢复…</div><iframe id="stage" src="v43-system-integrated-performance.html?v44safe=1&cb=20260815" title="V44 柴油机 3D 仿真"></iframe><script>
+const outer=document.getElementById('stage'),boot=document.getElementById('boot');
+const mobile=window.matchMedia('(max-width:900px), (pointer:coarse)').matches;
+const start=performance.now();let fallback=false,revealed=false,pollTimer=0;
+function chain(){const out=[];let frame=outer;for(let i=0;i<12;i++){try{const w=frame.contentWindow,d=frame.contentDocument;if(!w||!d)break;out.push({frame,w,d});const next=d.getElementById('stage');if(!next||!next.contentWindow)break;frame=next}catch(e){break}}return out}
+function hasRenderable(nodes){return nodes.some(({d})=>!!d.getElementById('canvas3d'))}
+function hideNestedBoots(nodes){for(const {d} of nodes){const b=d.getElementById('boot');if(b){b.style.opacity='0';b.style.visibility='hidden';b.style.pointerEvents='none'}}}
+function reveal(reason){const nodes=chain();hideNestedBoots(nodes);revealed=true;if(boot)boot.remove();window.__v44MobileSafe={ready:true,reason,fallback,depth:nodes.length,canvas:hasRenderable(nodes),timeMs:Math.round(performance.now()-start)}}
+function beginFallback(){if(fallback)return;fallback=true;if(boot)boot.textContent='增强运行时初始化超时，正在切换移动端稳定内核…';outer.src='v25-direct.html?v44-fallback=1&cb=20260815';setTimeout(poll,500)}
+function poll(){clearTimeout(pollTimer);const nodes=chain();if(hasRenderable(nodes)){reveal(fallback?'v25-mobile-fallback':'advanced-runtime-renderable');return}const elapsed=performance.now()-start;const limit=mobile?12000:18000;if(elapsed>limit){beginFallback();return}if(boot){const sec=Math.max(1,Math.round(elapsed/1000));boot.textContent=`正在进入 V44 · 移动端安全启动 / CAD 总成恢复… ${sec}s`}pollTimer=setTimeout(poll,350)}
+outer.addEventListener('load',()=>setTimeout(poll,120));
+setTimeout(poll,200);
+setTimeout(()=>{if(!revealed){const nodes=chain();hideNestedBoots(nodes);if(hasRenderable(nodes))reveal('watchdog-reveal');else if(!fallback)beginFallback()}},mobile?14000:20000);
+</script></body></html>
