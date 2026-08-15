@@ -3,16 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>四冲程柴油机 3D 仿真 · V34 Isolated Kinematics</title>
+<title>四冲程柴油机 3D 仿真 · V35 Industrial Assembly</title>
 <style>html,body,#frame{margin:0;width:100%;height:100%;border:0;background:#02070c}#msg{position:fixed;inset:0;display:grid;place-items:center;color:#eef7ff;font:14px system-ui;text-align:center;background:#02070c;z-index:2}</style>
 </head>
 <body>
-<div id="msg">正在进入 V34 · 独立16V动态 / 四缸分辨流动 / 运行自检…</div>
+<div id="msg">正在进入 V35 · 工业总成复杂度 / 默认剖视 / 交互修复…</div>
 <iframe id="frame" title="四冲程柴油机 3D 仿真"></iframe>
 <script>
 (async()=>{try{
  const q=new URLSearchParams(location.search),v=q.get('version');
- if(!v||v==='v34'){location.replace('versions/v34-isolated-kinematics.html?build=v34-isolated-kinematics&cb=8d5c86a3');return}
+ if(!v||v==='v35'){location.replace('versions/v35-industrial-assembly.html?build=v35-industrial-assembly&cb=e8772807');return}
+ if(v==='v34'){location.replace('versions/v34-isolated-kinematics.html?build=v34-isolated-kinematics');return}
  if(v==='v33'){location.replace('versions/v33-kinematic-head.html?build=v33-kinematic-head');return}
  if(v==='v32'){location.replace('versions/v32-flat-mechanical.html?build=v32-flat-mechanical');return}
  if(v==='v31'){location.replace('versions/v31-port-timing.html?build=v31-port-timing');return}
@@ -26,9 +27,9 @@
  let names,base;
  if(v==='v12'){names=['part-00.txt','part-01.txt','part-02.txt','part-03.txt','part-04.txt','part-05.txt'];base='payloads/v12/'}
  else if(v==='v18'){names=Array.from({length:14},(_,i)=>'seg-'+String(i).padStart(2,'0')+'.txt');base='payloads/v18/'}
- else{location.replace('versions/v34-isolated-kinematics.html?build=v34-isolated-kinematics&cb=8d5c86a3');return}
+ else{location.replace('versions/v35-industrial-assembly.html?build=v35-industrial-assembly&cb=e8772807');return}
  const parts=[];
- for(const n of names){const r=await fetch(base+n+'?b=8d5c86a3',{cache:'no-store'});if(!r.ok)throw new Error(n+' HTTP '+r.status);parts.push((await r.text()).trim())}
+ for(const n of names){const r=await fetch(base+n+'?b=e8772807',{cache:'no-store'});if(!r.ok)throw new Error(n+' HTTP '+r.status);parts.push((await r.text()).trim())}
  const bytes=Uint8Array.from(atob(parts.join('')),c=>c.charCodeAt(0));
  if(!window.DecompressionStream)throw new Error('浏览器版本过旧，不支持 gzip 解压');
  const text=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
